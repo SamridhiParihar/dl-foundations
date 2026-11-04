@@ -258,7 +258,103 @@ PyTorch tensors add features for model training, including device placement (CPU
 
 The APIs are similar but not identical. PyTorch may have different defaults, supported operations, device behavior, and in-place operation rules. When converting, be explicit about the boundary: `torch.from_numpy(array)` can share CPU memory with a compatible NumPy array, while `.numpy()` is available for suitable CPU tensors that do not require gradients. For GPU/MPS tensors or tensors participating in autograd, conversion usually involves moving to CPU and/or detaching first. Understand ownership and device before assuming two objects share data.
 
-## 11. Learning roadmap
+## 11. PyTorch tensors: from array structure to learning
+
+A PyTorch `Tensor` is a typed, n-dimensional array. Like a NumPy array, it stores values in a rectangular shape; unlike a NumPy array, a tensor can live on a CPU or accelerator and can track operations for automatic differentiation. Each axis should still have a clear meaning: for a batch of images, for example, the axes might be batch, channel, height, and width.
+
+### Dimensions and creation
+
+The number of axes is the tensor's rank, available as `.ndim`. A scalar has no axes and shape `()`, a vector might have shape `(3,)`, a matrix might have shape `(2, 3)`, and a higher-dimensional tensor has three or more axes. Shape records the length of each axis; it does not describe what the values mean, so name the axes as you do with NumPy.
+
+```python
+import torch
+
+scalar = torch.tensor(5.0)                              # shape ()
+vector = torch.tensor([1, 2, 3], dtype=torch.float32)   # shape (3,)
+matrix = torch.zeros((2, 3))                            # shape (2, 3)
+uniform = torch.rand((2, 3))                            # uniform values in [0, 1)
+normal = torch.randn((2, 3))                            # standard normal values
+same_structure = torch.ones_like(matrix)
+```
+
+`torch.tensor(data)` copies the supplied values into a tensor and infers a dtype unless one is specified. Use `torch.zeros`, `torch.ones`, `torch.full`, `torch.rand`, and `torch.randn` when the desired values or random distribution are known. The `*_like` functions create a tensor with another tensor's shape and, by default, its dtype and device; pass an explicit `dtype` or `device` to override those properties.
+
+### Shape, dtype, and device
+
+These attributes answer different questions:
+
+- `x.shape` gives the axis lengths, such as `(2, 3)`.
+- `x.ndim` gives the number of axes.
+- `x.numel()` gives the total number of elements, the product of the shape dimensions.
+- `x.dtype` gives the representation used for each element, such as `torch.int64`, `torch.float32`, or `torch.float64`.
+- `x.device` tells where the tensor's data lives.
+
+```python
+print(matrix.shape, matrix.dtype, matrix.device)
+print(matrix.ndim, matrix.numel())
+```
+
+For a tensor's element data, `x.numel() * x.element_size()` gives its storage size in bytes; this does not include Python objects, allocator overhead, or other framework bookkeeping. A dtype conversion can change precision and memory use without changing the shape.
+
+### CPU, CUDA, MPS, and `.to()`
+
+CPU is the general-purpose processor. CUDA is PyTorch's backend for supported NVIDIA GPUs. MPS is the Apple Metal backend for supported Apple hardware and PyTorch builds. Check availability rather than assuming a particular accelerator exists:
+
+```python
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
+```
+
+Create a tensor on a chosen device or move an existing one with `.to()`:
+
+```python
+x = torch.tensor([1, 2, 3])
+x = x.to(device=device, dtype=torch.float32)
+```
+
+`.to()` returns a tensor with the requested device and/or dtype; assigning the result makes the variable refer to it. The original tensor is not changed in place. If it already has the requested properties, PyTorch may return the original tensor. Ordinary operations such as addition and matrix multiplication require their input tensors to be on compatible devices, so place model parameters and input data consistently. An accelerator may also support only a subset of operations, depending on the hardware and PyTorch version.
+
+### NumPy conversion and shared memory
+
+The NumPy bridge is a boundary between CPU array storage and PyTorch. For a compatible NumPy array, `torch.from_numpy(array)` creates a CPU tensor that shares the array's storage:
+
+```python
+import numpy as np
+import torch
+
+array = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+tensor = torch.from_numpy(array)
+array[0] = 10.0  # tensor sees this change
+tensor[1] = 20.0 # array sees this change
+```
+
+Because the storage is shared, either object's in-place edits are visible through the other. The tensor cannot resize that NumPy allocation. `torch.from_numpy` accepts CPU arrays with supported NumPy dtypes; it does not move an array to CUDA or MPS. Do not write through the tensor when the source NumPy array is read-only. Use `torch.tensor(array)` or `array.copy()` first when independent storage is required.
+
+In the other direction, `tensor.numpy()` is available when the tensor is on the CPU, does not require gradients, and has a dtype and layout supported by NumPy. In that case, the returned array shares the tensor's storage, so mutations are visible in both directions. A CUDA or MPS tensor cannot directly expose its device memory as a NumPy array, and a tensor requiring gradients must be detached from autograd first:
+
+```python
+array_copy = tensor.detach().cpu().numpy().copy()
+```
+
+`.detach()` disconnects the value from its computation graph; `.cpu()` moves accelerator data to CPU when needed; the final `.copy()` ensures the NumPy result has independent storage. Without `.copy()`, a detached CPU tensor may still share memory with the resulting array. Moving data between an accelerator and CPU can take time and memory, so convert at clear points such as data loading, inspection, or exporting results.
+
+### In-place operations and autograd
+
+An in-place method changes the existing tensor. PyTorch commonly marks these methods with a trailing underscore: `x.add_(value)` updates `x`, while `x + value` creates a result and leaves `x` unchanged. An in-place edit can also affect other tensors that are views of or share storage with `x`.
+
+Autograd records operations and saves some values needed to calculate gradients later. An in-place edit can overwrite a saved value and make the backward pass incorrect or trigger a runtime error. A leaf tensor with `requires_grad=True` generally cannot be modified in place while gradient tracking is active. Prefer out-of-place operations in a model's forward calculation. Optimizers handle parameter updates safely; if writing a manual update, perform it under `torch.no_grad()` so the update itself is not added to the graph.
+
+### Connection to the NumPy neural network and backpropagation
+
+The matrix shapes and broadcasting rules from the NumPy sections carry straight into PyTorch. The same batched layer has the form `Z = X @ W + b`: rows of `X` are examples, columns are features, and `b` broadcasts across the batch. A multi-layer model applies that pattern repeatedly with elementwise activations between layers.
+
+In the NumPy backpropagation chapter, the `Z`, `A`, `W`, `b`, and `dW`/`db` arrays make each forward and backward formula visible. PyTorch uses tensors for the same values and can build a computation graph as those operations run. Mark learnable weights and biases with `requires_grad=True`; after computing a scalar loss, call `loss.backward()` to have autograd apply the chain rule and place gradients on the parameters. Gradients accumulate in `.grad`, so training code clears them before the next update. Comparing PyTorch gradients with the manual formulas in [`02 · Backpropagation by Hand`](../02-backprop-by-hand/README.md) connects autograd to the mathematics rather than treating it as a black box. The shapes, data types, and device locations still need to be checked just as carefully as in NumPy. Then practice these APIs in [`exercises/pytorch_tensors.py`](exercises/pytorch_tensors.py); keep the solutions in that exercise file.
+
+## 12. Learning roadmap
 
 1. **Read the shapes aloud.** For every array, name its axes and confirm `shape`, `ndim`, `size`, and `dtype`.
 2. **Predict before running.** Work out indexing results, reshape dimensions, and all six broadcasting exercises by hand.
@@ -288,3 +384,9 @@ Then complete [`exercises/numpy_exercises.py`](exercises/numpy_exercises.py). It
 - [NumPy data types](https://numpy.org/doc/stable/user/basics.types.html)
 - [NumPy `matmul`](https://numpy.org/doc/stable/reference/generated/numpy.matmul.html)
 - [PyTorch tensors](https://pytorch.org/tutorials/beginner/basics/tensorqs_tutorial.html)
+- [PyTorch tensor creation](https://docs.pytorch.org/docs/stable/generated/torch.tensor.html)
+- [PyTorch Tensor `.to()`](https://docs.pytorch.org/docs/stable/generated/torch.Tensor.to.html)
+- [PyTorch `torch.from_numpy`](https://docs.pytorch.org/docs/stable/generated/torch.from_numpy.html)
+- [PyTorch Tensor `.numpy()`](https://docs.pytorch.org/docs/stable/generated/torch.Tensor.numpy.html)
+- [PyTorch autograd mechanics](https://docs.pytorch.org/docs/stable/notes/autograd.html)
+- [PyTorch MPS backend](https://docs.pytorch.org/docs/stable/notes/mps.html)

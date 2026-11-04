@@ -22,11 +22,11 @@ $$
 ## Now for output layer $\delta$
 
 $$
-\delta_{i_2}^j
+\delta_{i_{12}}^j
 =
-\frac{\partial L^j}{\partial x_{i_2}^j}
+\frac{\partial L^j}{\partial x_{i_{12}}^j}
 =
-\frac{\partial}{\partial x_{i_2}^j}
+\frac{\partial}{\partial x_{i_{12}}^j}
 \left(
 \sum_{o \in \text{outputs}} (t_o^j-a_o^j)^2
 \right)
@@ -37,29 +37,29 @@ $$
 -2\sum_{o \in \text{outputs}}
 (t_o^j-a_o^j)
 \cdot
-\frac{\partial a_o^j}{\partial x_{i_2}^j}
+\frac{\partial a_o^j}{\partial x_{i_{12}}^j}
 $$
 
-For $i=1,2$:
+For the two output neurons, $i_{11}$ and $i_{12}$:
 
 $$
 =
 -2\left\{
-(t_{i_1}^j-a_{i_1}^j)
+(t_{i_{11}}^j-a_{i_{11}}^j)
 \cdot
-\frac{\partial a_{i_1}^j}{\partial x_{i_2}^j}
+\frac{\partial a_{i_{11}}^j}{\partial x_{i_{12}}^j}
 +
-(t_{i_2}^j-a_{i_2}^j)
+(t_{i_{12}}^j-a_{i_{12}}^j)
 \cdot
-\frac{\partial a_{i_2}^j}{\partial x_{i_2}^j}
+\frac{\partial a_{i_{12}}^j}{\partial x_{i_{12}}^j}
 \right\}
 $$
 
-$a_{i_1}$ will be constant w.r.t. $x_{i_2}$, so derivative is zero.
+$a_{i_{11}}$ will be constant w.r.t. $x_{i_{12}}$, so derivative is zero.
 
 $$
 =
--2(t_{i_2}^j-a_{i_2}^j)\cdot f'_{i_2}(a_{i_2}^j)
+-2(t_{i_{12}}^j-a_{i_{12}}^j)\cdot f'_{i_{12}}(a_{i_{12}}^j)
 $$
 
 Now $f$ is activation, so derivative can vary.
@@ -88,15 +88,15 @@ $$
 \frac{\partial L^j}{\partial x_g^j}
 =
 \left(
-\frac{\partial L^j}{\partial x_{i_1}^j}
+\frac{\partial L^j}{\partial x_{i_{11}}^j}
 \cdot
-\frac{\partial x_{i_1}^j}{\partial x_g^j}
+\frac{\partial x_{i_{11}}^j}{\partial x_g^j}
 \right)
 +
 \left(
-\frac{\partial L^j}{\partial x_{i_2}^j}
+\frac{\partial L^j}{\partial x_{i_{12}}^j}
 \cdot
-\frac{\partial x_{i_2}^j}{\partial x_g^j}
+\frac{\partial x_{i_{12}}^j}{\partial x_g^j}
 \right)
 $$
 
