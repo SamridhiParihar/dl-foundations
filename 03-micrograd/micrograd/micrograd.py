@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import math
 from graphviz import Digraph
 import torch
+import random
 
 def draw(o):
      dot = draw_dot(o)
@@ -397,7 +398,7 @@ o = (e-1)/(e+1)
 o.label = 'o'
 e.lable = 'e'
 o.backward()
-draw(o)
+# draw(o)
 
 
 # we can do the same thing but via pytorch api 
@@ -416,5 +417,165 @@ print (f"x1 grad : {x1.grad.item()}")
 print (f"w2 grad : {w2.grad.item()}")
 print (f"w1 grad : {w1.grad.item()}")
 
+# ----------------------------------------
+# building a single nueron 
+class Neuron :
+     def __init__(self, nin):
+          self.w = [Value(random.uniform(-1,1))for _ in range(nin)]
+          self.b = Value(random.uniform(-1,1))
+
+     def __call__(self, x):
+          # w*x +b 
+          act = sum((wi*xi for wi, xi in zip(self.w,x)),self.b)
+          out = act.tanh()
+          return out
+     def parameters(self):
+          return self.w+[self.b]
+     
+
+# a single layer
+class Layer :
+     def __init__(self,nin,nout):
+          self.neurons = [Neuron(nin)for _ in range(nout)]
+
+     def __call__(self, x):
+          outs = [n(x) for n in self.neurons]
+          return outs[0] if len(outs)==1 else outs
+     def parameters(self):
+          params = []
+          for nueron in self.neurons:
+               ps = nueron.parameters()
+               params.extend(ps)
+          return params
+     
+# entire layer mlp
+class MLP :
+     def __init__(self, nin , nouts):
+          sz = [nin] + nouts
+          self.layers = [Layer(sz[i],sz[i+1]) for i in range(len(nouts))]
+     def __call__(self, x):
+          for layer in self.layers:
+               x = layer(x)
+          return x
+     def parameters(self):
+          return [p for layer in self.layers for p in layer.parameters()]
+        #   params = []
+        #   for layer in self.layers:
+        #        ps = layer.parameters()
+        #        params.extend(ps)
+        #   return params
+          
+
+# for MLP code understanding 
+# =====================================================================
+# MICROGRAD MLP (MULTI-LAYER PERCEPTRON) REFERENCE NOTE
+# =====================================================================
+
+# 1. THE ARCHITECTURE CONFIGURATION (__init__)
+# Goal: Chain layers sequentially, ensuring Layer(Inputs, Outputs) match.
+# Example: MLP(nin=3, nouts=[4, 4, 1])
+#   - sz = [3] + [4, 4, 1] -> [3, 4, 4, 1] (Complete sizing map)
+#   - Loop creates layers using adjacent sizes (sz[i] to sz[i+1]):
+#     - i = 0: Layer(3, 4) -> Accepts 3 inputs, contains 4 neurons
+#     - i = 1: Layer(4, 4) -> Accepts 4 inputs, contains 4 neurons
+#     - i = 2: Layer(4, 1) -> Accepts 4 inputs, contains 1 output neuron
+
+# 2. THE FORWARD PROPAGATION FLOW (__call__)
+# Goal: Pass inputs sequentially through the network ("Assembly Line").
+#   - Uses a rolling variable update rule: x = layer(x)
+#   - Step 1: Input features [x1, x2, x3] enter Layer 0 -> returns 4 values
+#   - Step 2: Those 4 values immediately enter Layer 1 -> returns 4 new values
+#   - Step 3: Those 4 new values enter Layer 2 -> returns final predictions
+# =====================================================================
 
 
+# ----------------------
+x = [2.0,3.0,-1.0]
+n = MLP(3,[4,4,1])
+# n = Neuron(2)
+# n = Layer(2,3)
+
+# print(n(x))
+# print(n.parameters())
+# print(f"size : {len(n.parameters())}")
+
+# draw(n(x))
+
+# now lets creating a tiny dataset
+xs = [
+     [2.0,3.0,-1.0],
+     [3.0,-1.0,0.5],
+     [0.5,1.0,1.0],
+     [1.0,1.0,-1.0]
+]
+ys = [1.0, -1.0, -1.0, 1.0]
+
+# ypred = [n(x) for x in xs]
+# print(f"ypred: {ypred}")
+
+# loss = sum([(yout-ygt)**2 for ygt,yout in zip(ys,ypred)])
+# print(f"loss: {loss}")
+
+# loss.backward()
+
+# # print(n.layers[0].neurons[0].w[0].grad)
+# print(n.layers[0].neurons[0].w[0].data)
+
+# draw(loss)
+
+# for p in n.parameters():
+#      p.data += -0.01*p.grad # - minus as we want to decrease the loss
+
+# print(n.layers[0].neurons[0].w[0].data)
+
+# ypred = [n(x) for x in xs]
+# print(f"ypred: {ypred}")
+
+# loss = sum([(yout-ygt)**2 for ygt,yout in zip(ys,ypred)])
+# print(f"loss: {loss}")
+
+
+# now we have to iterate the process (forward pass , backward pass and nudge the value)
+loss_history = []
+epochs = 100
+learning_rate = 0.01
+for k in range(epochs):
+     # forward pass
+     ypred = [n(x) for x in xs]
+     loss = sum([(yout-ygt)**2 for ygt, yout in zip(ys,ypred)])
+
+     # .zero_grad()(in pytorch) before .backward() ( to avoid accumulation from prev training loop)
+     for parameter in n.parameters():
+          parameter.grad = 0.0
+
+     # backward pass
+     loss.backward()
+
+     # gradient descent 
+     for p in n.parameters():
+          p.data += -learning_rate*p.grad
+
+     loss_history.append(loss.data)
+
+
+# plt.figure(figsize=(8, 5))
+
+# plt.plot(loss_history)
+
+# plt.xlabel("Epoch")
+# plt.ylabel("Binary Cross Entropy Loss")
+# plt.title("Training Loss Curve")
+
+# plt.grid(True)
+# plt.show()
+
+ypred = [n(x) for x in xs]
+print(ypred)
+
+# -------------------------------
+
+# nueral net mistakes : 
+# 1. we forget to fit a single batch first
+# 2. we forget to toggle train/eval mode for the net
+# 3. we forget to .zero_grad()(in pytorch) before .backward()
+# 4. we pass the softmaxed outputs to a loss that expects a raw logits 
