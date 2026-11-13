@@ -1,25 +1,12 @@
 import torch
 from torch import nn
-
+from evaluation import evaluate_model
 from model import MyNeuralNetwork
+from dataset import train_loader , val_loader
+from evaluation import evaluate_model
+from plotting import plot_losses
 
 
-# before training loop we need : model , loss_fn, optimizer , device should be same 
-
-DEVICE = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
-
-model = MyNeuralNetwork().to(DEVICE)
-
-loss_fn = nn.CrossEntropyLoss()
-
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-
-# verification prints 
-
-print("Device:", DEVICE)
-print("Loss function:", loss_fn)
-print("Optimizer:", optimizer)
-print("Learning rate:", optimizer.param_groups[0]["lr"])
 
 
 def train_one_epoch(model,train_loader,loss_fn,optimizer,device):
@@ -29,13 +16,7 @@ def train_one_epoch(model,train_loader,loss_fn,optimizer,device):
        optimizer : for gradeint descent step and resetting the grad 
        device : where we want to the actual mathematical operatio to happen : 'mps' or 'cpu' 
     '''
-    # Define the function and its parameters.
-    # Set model.train().
-    # Iterate through train_loader.
-    # Move images and labels to DEVICE.
-    # Implement forward pass and loss calculation.
-    # Implement gradient reset, backpropagation, and weight updates.
-    # Return average training loss.
+
 
     model.train()
 
@@ -84,17 +65,66 @@ def train_model(model,train_loader,loss_fn,optimizer,device,epochs):
 
 
 
+# modified train_model to store val losses also 
+def train_model_with_val(model,train_loader,val_loader , loss_fn,optimizer,device,epochs):
+
+    epoch_losses_train = []
+    epoch_losses_val = []
+
+    for i in range(epochs):
+        epoch_loss_train = train_one_epoch(model,train_loader,loss_fn,optimizer,device)
+        epoch_loss_val, _ = evaluate_model(model,val_loader,loss_fn,device)
+        epoch_losses_train.append(epoch_loss_train)
+        epoch_losses_val.append(epoch_loss_val)
+
+        print(
+            f"Epoch [{i+1}/{epochs}] - "
+            f"Training Loss: {epoch_loss_train:.4f} - "
+            f"Validation Loss: {epoch_loss_val:.4f}"
+        )
+    return epoch_losses_train, epoch_losses_val
+
+
 if __name__ == "__main__":
 
-    from dataset import train_loader
 
-    # epoch_loss = train_one_epoch(
-    #     model, train_loader, loss_fn, optimizer, DEVICE
-    # )
 
-    epoch_losses = train_model(
-            model, train_loader, loss_fn, optimizer, DEVICE , 5
-        )
+    # before training loop we need : model , loss_fn, optimizer , device should be same 
 
-    print("Training loss:", epoch_losses)
+    DEVICE = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
+    model = MyNeuralNetwork().to(DEVICE)
+
+    loss_fn = nn.CrossEntropyLoss()
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+    # verification prints 
+
+    print("Device:", DEVICE)
+    print("Loss function:", loss_fn)
+    print("Optimizer:", optimizer)
+    print("Learning rate:", optimizer.param_groups[0]["lr"])
+
+    
+    # # training the model 
+    # epoch_losses_train = train_model(
+    #         model, train_loader ,loss_fn, optimizer, DEVICE , 5
+    #     )
+
+    # print("Training loss:", epoch_losses_train)
+
+    # # evaluating the model 
+    # avg_loss , accuracy = evaluate_model(model,val_loader,loss_fn,DEVICE)
+
+    # print(f"Average Validation Loss: {avg_loss:.4f}")
+    # print(f"Validation Accuracy: {accuracy:.2f}%")
+
+
+    # training the model with new method (train_model_with_val)
+    epoch_losses_train, epoch_losses_val = train_model_with_val(
+                model, train_loader,val_loader ,loss_fn, optimizer, DEVICE , 5
+    )
+
+    # plotting 
+    plot_losses(epoch_losses_train, epoch_losses_val)
