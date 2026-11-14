@@ -39,19 +39,24 @@ val_size = full_train_size - train_size
 # Use a fixed generator seed for reproducible splits
 generator = torch.Generator()
 generator.manual_seed(42)
+
 train_dataset , val_dataset = random_split(
     full_train_dataset,
     [train_size,val_size],
     generator = generator
 )
 
+# Generator for reproducible training batch ordering
+train_generator = torch.Generator()
+train_generator.manual_seed(42)
 
 train_loader = DataLoader(
     train_dataset,
-    batch_size = BATCH_SIZE,
-    shuffle = True,
-    num_workers = 0,
-    pin_memory = False # for mac 
+    batch_size=BATCH_SIZE,
+    shuffle=True,
+    num_workers=0,
+    pin_memory=False,
+    generator=train_generator
 )
 
 val_loader = DataLoader(

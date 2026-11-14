@@ -3,8 +3,8 @@ from torch import nn
 from evaluation import evaluate_model
 from model import MyNeuralNetwork
 from dataset import train_loader , val_loader
-from evaluation import evaluate_model
 from plotting import plot_losses
+from checkpoint import save_checkpoint
 
 
 
@@ -125,6 +125,9 @@ if __name__ == "__main__":
     epoch_losses_train, epoch_losses_val = train_model_with_val(
                 model, train_loader,val_loader ,loss_fn, optimizer, DEVICE , 5
     )
+
+    # saving the check point 
+    save_checkpoint(model,"checkpoints/fashion_mnist.pth")
 
     # plotting 
     plot_losses(epoch_losses_train, epoch_losses_val)
