@@ -60,28 +60,30 @@ A neural network is a mathematical function that learns a relationship between i
 
 A simple neuron computes:
 
-\[
+$$
 y = w_1x_1+w_2x_2+\cdots+w_nx_n+b
-\]
+$$
 
 Or, more compactly:
 
-\[
+$$
 y = w^Tx+b
-\]
+$$
 
 Where:
 
-- \(x\) = input values
-- \(w\) = learnable weights
-- \(b\) = bias
-- \(y\) = output
+- $x$ = input values
+- $w$ = learnable weights
+- $b$ = bias
+- $y$ = output
+
+![A single neuron: weighted sum plus bias followed by ReLU](assets/neuron.svg)
 
 An activation function such as ReLU introduces nonlinearity:
 
-\[
+$$
 ReLU(x)=\max(0,x)
-\]
+$$
 
 A multilayer neural network combines many such operations.
 
@@ -136,27 +138,27 @@ It takes two sequences and produces a third sequence.
 
 The mathematical definition is:
 
-\[
+$$
 C[n]=\sum_{k=-\infty}^{\infty}A[k]B[n-k]
-\]
+$$
 
 For finite sequences, we only calculate the overlapping positions.
 
-If the first sequence has length \(N\) and the second has length \(M\), the full convolution has length:
+If the first sequence has length $N$ and the second has length $M$, the full convolution has length:
 
-\[
+$$
 \boxed{N+M-1}
-\]
+$$
 
 For example:
 
-\[
+$$
 N=3,\quad M=2
-\]
+$$
 
-\[
+$$
 Output=3+2-1=4
-\]
+$$
 
 ## 2.2 The three-step intuition
 
@@ -169,6 +171,8 @@ Convolution can be understood through three operations:
 This is commonly described as:
 
 **Flip → Slide → Multiply and Add**
+
+![Flip, slide, multiply and add for [1,2,3] * [4,5]](assets/conv1d_slide.svg)
 
 ### Visual example
 
@@ -225,9 +229,9 @@ B:          5
 
 Final output:
 
-\[
+$$
 \boxed{[4,13,22,15]}
-\]
+$$
 
 This is discrete linear convolution.
 
@@ -235,35 +239,35 @@ This is discrete linear convolution.
 
 Let:
 
-\[
+$$
 A=[1,2,3]
-\]
+$$
 
-\[
+$$
 B=[4,5,6]
-\]
+$$
 
 The output length is:
 
-\[
+$$
 3+3-1=5
-\]
+$$
 
 Calculations:
 
 | Position | Calculation | Result |
 |---|---|---:|
-| 1 | \(1\times4\) | 4 |
-| 2 | \(1\times5+2\times4\) | 13 |
-| 3 | \(1\times6+2\times5+3\times4\) | 28 |
-| 4 | \(2\times6+3\times5\) | 27 |
-| 5 | \(3\times6\) | 18 |
+| 1 | $1\times4$ | 4 |
+| 2 | $1\times5+2\times4$ | 13 |
+| 3 | $1\times6+2\times5+3\times4$ | 28 |
+| 4 | $2\times6+3\times5$ | 27 |
+| 5 | $3\times6$ | 18 |
 
 Final result:
 
-\[
+$$
 \boxed{[4,13,28,27,18]}
-\]
+$$
 
 Notice that convolution combines every possible overlapping pair.
 
@@ -273,15 +277,17 @@ We can arrange all pairwise multiplications in a grid.
 
 For:
 
-\[
+$$
 A=[1,2,3],\quad B=[4,5,6]
-\]
+$$
 
 | | 4 | 5 | 6 |
 |---|---:|---:|---:|
 | 1 | 4 | 5 | 6 |
 | 2 | 8 | 10 | 12 |
 | 3 | 12 | 15 | 18 |
+
+![Multiplication grid with anti-diagonals coloured](assets/mult_grid.svg)
 
 Now add along the diagonals:
 
@@ -299,9 +305,9 @@ Now add along the diagonals:
 
 Therefore:
 
-\[
+$$
 [4,13,28,27,18]
-\]
+$$
 
 This diagonal interpretation becomes important when we study probability and polynomial multiplication.
 
@@ -329,13 +335,15 @@ We can smooth the signal by applying a moving average.
 
 For example, use:
 
-\[
+$$
 B=\left[\frac13,\frac13,\frac13\right]
-\]
+$$
 
 Each output is the average of three neighbouring values.
 
 This reduces sharp fluctuations.
+
+![Noisy signal smoothed by a moving-average kernel](assets/moving_average.png)
 
 This is convolution.
 
@@ -390,15 +398,15 @@ We want to calculate the probability of getting every possible sum.
 
 Possible sums:
 
-\[
+$$
 2,3,4,\ldots,12
-\]
+$$
 
 There are:
 
-\[
+$$
 6\times6=36
-\]
+$$
 
 equally likely outcomes.
 
@@ -419,41 +427,41 @@ For example, the sum 7 appears six times.
 
 Therefore:
 
-\[
+$$
 P(X+Y=7)=\frac6{36}=\frac16
-\]
+$$
 
 ## 4.2 Represent a random variable using a probability distribution
 
 A fair die has this probability distribution:
 
-\[
+$$
 A=
 \left[
 \frac16,\frac16,\frac16,\frac16,\frac16,\frac16
 \right]
-\]
+$$
 
 The second die has the same distribution:
 
-\[
+$$
 B=
 \left[
 \frac16,\frac16,\frac16,\frac16,\frac16,\frac16
 \right]
-\]
+$$
 
 We want the probability distribution of their sum.
 
 We can obtain it by convolving these two distributions.
 
-\[
+$$
 C=A*B
-\]
+$$
 
 The resulting probabilities correspond to sums 2 through 12:
 
-\[
+$$
 C=
 \left[
 \frac1{36},
@@ -468,7 +476,7 @@ C=
 \frac2{36},
 \frac1{36}
 \right]
-\]
+$$
 
 Notice the triangular pattern.
 
@@ -490,6 +498,8 @@ Sum       Number of outcomes
 
 The reason is that there are more combinations that produce middle sums than extreme sums.
 
+![Two uniform dice distributions convolve into a triangular distribution](assets/dice_sum.png)
+
 ## 4.3 A simpler example using marbles
 
 Suppose a bag contains:
@@ -499,33 +509,43 @@ Suppose a bag contains:
 
 The probability of red is:
 
-\[
+$$
 P(R)=\frac23
-\]
+$$
 
 The probability of blue is:
 
-\[
+$$
 P(B)=\frac13
-\]
+$$
 
 We draw twice, with replacement.
 
-Let \(X\) represent the number of red marbles drawn.
+```mermaid
+flowchart LR
+    S(("Start")) -->|"Red 2/3"| R["R"]
+    S -->|"Blue 1/3"| B["B"]
+    R -->|"Red 2/3"| RR["R, R → X = 2<br/>2/3 × 2/3 = 4/9"]
+    R -->|"Blue 1/3"| RB["R, B → X = 1<br/>2/3 × 1/3 = 2/9"]
+    B -->|"Red 2/3"| BR["B, R → X = 1<br/>1/3 × 2/3 = 2/9"]
+    B -->|"Blue 1/3"| BB["B, B → X = 0<br/>1/3 × 1/3 = 1/9"]
+```
+
+Let $X$ represent the number of red marbles drawn.
 
 Possible values:
 
-\[
+$$
 X=0,1,2
-\]
+$$
 
 **Case 1: No red marbles**
 
 Both draws must be blue.
 
-\[
+$$
 P(X=0)=\frac13\times\frac13=\frac19
-\]
+$$
 
 **Case 2: Exactly one red marble**
 
@@ -534,46 +554,46 @@ There are two possibilities:
 - Red, then blue.
 - Blue, then red.
 
-\[
+$$
 P(X=1)=
 \frac23\times\frac13+
 \frac13\times\frac23
-\]
+$$
 
-\[
+$$
 P(X=1)=\frac49
-\]
+$$
 
 **Case 3: Two red marbles**
 
-\[
+$$
 P(X=2)=\frac23\times\frac23
-\]
+$$
 
-\[
+$$
 P(X=2)=\frac49
-\]
+$$
 
 Final distribution:
 
-\[
+$$
 \boxed{
 \left[\frac19,\frac49,\frac49\right]
 }
-\]
+$$
 
 Now look at the original single-draw distribution:
 
-\[
+$$
 A=\left[\frac13,\frac23\right]
-\]
+$$
 
 Convolve it with itself:
 
-\[
+$$
 A*A=
 \left[\frac19,\frac49,\frac49\right]
-\]
+$$
 
 Exactly the same result!
 
@@ -585,15 +605,15 @@ A probability distribution describes how likely each possible numerical value is
 
 For two independent random variables:
 
-\[
+$$
 Z=X+Y
-\]
+$$
 
-The probability distribution of \(Z\) is the convolution of the probability distributions of \(X\) and \(Y\).
+The probability distribution of $Z$ is the convolution of the probability distributions of $X$ and $Y$.
 
-\[
+$$
 \boxed{P_Z=P_X*P_Y}
-\]
+$$
 
 This connection is useful in probability, statistics, and signal processing.
 
@@ -627,35 +647,35 @@ A PDF represents probability density.
 
 The total area under its curve must equal 1.
 
-\[
+$$
 \int_{-\infty}^{\infty}f(x)\,dx=1
-\]
+$$
 
-To calculate the probability that a value lies between \(a\) and \(b\):
+To calculate the probability that a value lies between $a$ and $b$:
 
-\[
+$$
 P(a\leq X\leq b)
 =
 \int_a^b f(x)\,dx
-\]
+$$
 
 ## 5.2 Continuous convolution formula
 
 In the discrete case, we used summation:
 
-\[
+$$
 C[n]=\sum_k A[k]B[n-k]
-\]
+$$
 
 For continuous functions, summation becomes integration:
 
-\[
+$$
 \boxed{
 (f*g)(z)=
 \int_{-\infty}^{\infty}
 f(x)g(z-x)\,dx
 }
-\]
+$$
 
 The basic intuition remains the same:
 
@@ -668,31 +688,31 @@ The basic intuition remains the same:
 
 Suppose we independently select two random numbers:
 
-\[
+$$
 X\sim Uniform(0,1)
-\]
+$$
 
-\[
+$$
 Y\sim Uniform(0,1)
-\]
+$$
 
 Each has a flat probability density:
 
-\[
+$$
 f(x)=
 \begin{cases}
 1 & 0\leq x\leq1\\
 0 & \text{otherwise}
 \end{cases}
-\]
+$$
 
 We want the distribution of:
 
-\[
+$$
 Z=X+Y
-\]
+$$
 
-The possible values of \(Z\) range from 0 to 2.
+The possible values of $Z$ range from 0 to 2.
 
 The resulting probability density is triangular.
 
@@ -717,17 +737,17 @@ Why does this happen?
 
 For example:
 
-\[
+$$
 0.2+0.8=1
-\]
+$$
 
-\[
+$$
 0.5+0.5=1
-\]
+$$
 
-\[
+$$
 0.9+0.1=1
-\]
+$$
 
 There are many combinations around the middle.
 
@@ -743,58 +763,58 @@ This is another important connection.
 
 Consider two polynomials:
 
-\[
+$$
 A(x)=1+2x+3x^2
-\]
+$$
 
-\[
+$$
 B(x)=4+5x+6x^2
-\]
+$$
 
 Let's multiply them.
 
-\[
+$$
 A(x)B(x)=
 (1+2x+3x^2)(4+5x+6x^2)
-\]
+$$
 
 Expanding:
 
-\[
+$$
 =4+5x+6x^2
-\]
+$$
 
-\[
+$$
 +8x+10x^2+12x^3
-\]
+$$
 
-\[
+$$
 +12x^2+15x^3+18x^4
-\]
+$$
 
 Combining like terms:
 
-\[
+$$
 =4+13x+28x^2+27x^3+18x^4
-\]
+$$
 
 Final coefficients:
 
-\[
+$$
 \boxed{[4,13,28,27,18]}
-\]
+$$
 
 Compare this with our earlier convolution:
 
-\[
+$$
 [1,2,3]*[4,5,6]
-\]
+$$
 
 The result was:
 
-\[
+$$
 [4,13,28,27,18]
-\]
+$$
 
 Exactly the same!
 
@@ -802,31 +822,31 @@ Exactly the same!
 
 Consider:
 
-\[
+$$
 A(x)=a_0+a_1x+a_2x^2
-\]
+$$
 
-\[
+$$
 B(x)=b_0+b_1x+b_2x^2
-\]
+$$
 
-When we multiply them, the coefficient of \(x^n\) becomes:
+When we multiply them, the coefficient of $x^n$ becomes:
 
-\[
+$$
 c_n=\sum_k a_kb_{n-k}
-\]
+$$
 
 This is precisely the convolution formula.
 
 Therefore:
 
-\[
+$$
 \boxed{
 \text{Polynomial multiplication}
 =
 \text{Convolution of coefficients}
 }
-\]
+$$
 
 This connection becomes extremely important when we study FFT.
 
@@ -844,44 +864,44 @@ This is where linear algebra enters.
 
 Consider:
 
-\[
+$$
 A=[1,2,3]
-\]
+$$
 
-\[
+$$
 B=[4,5]
-\]
+$$
 
 The convolution is:
 
-\[
+$$
 [4,13,22,15]
-\]
+$$
 
 We can construct a matrix from the second sequence:
 
-\[
+$$
 \begin{bmatrix}
 4&0&0\\
 5&4&0\\
 0&5&4\\
 0&0&5
 \end{bmatrix}
-\]
+$$
 
 Multiply it by:
 
-\[
+$$
 \begin{bmatrix}
 1\\
 2\\
 3
 \end{bmatrix}
-\]
+$$
 
 Result:
 
-\[
+$$
 \begin{bmatrix}
 4&0&0\\
 5&4&0\\
@@ -900,9 +920,11 @@ Result:
 22\\
 15
 \end{bmatrix}
-\]
+$$
 
 This matrix is a Toeplitz matrix.
+
+![Toeplitz matrix times input vector equals convolution output](assets/toeplitz.svg)
 
 ## 7.2 What is a Toeplitz matrix?
 
@@ -914,15 +936,15 @@ This allows convolution to be represented as a linear transformation.
 
 In other words:
 
-\[
+$$
 \boxed{y=Tx}
-\]
+$$
 
 Where:
 
-- \(T\) = Toeplitz matrix constructed from the filter.
-- \(x\) = input sequence.
-- \(y\) = convolution output.
+- $T$ = Toeplitz matrix constructed from the filter.
+- $x$ = input sequence.
+- $y$ = convolution output.
 
 ### Why is this useful?
 
@@ -936,13 +958,13 @@ A practical implementation technique used in some convolution algorithms is `im2
 
 # 8. Why Direct Convolution Can Be Slow
 
-Suppose we have two sequences, each containing \(N\) numbers.
+Suppose we have two sequences, each containing $N$ numbers.
 
 Direct convolution requires approximately:
 
-\[
+$$
 O(N^2)
-\]
+$$
 
 operations.
 
@@ -976,21 +998,21 @@ But first, we need to understand complex numbers.
 
 A complex number has two parts:
 
-\[
+$$
 z=a+bi
-\]
+$$
 
 Where:
 
-- \(a\) = real part.
-- \(b\) = imaginary part.
-- \(i\) = imaginary unit.
+- $a$ = real part.
+- $b$ = imaginary part.
+- $i$ = imaginary unit.
 
 The imaginary unit is defined as:
 
-\[
+$$
 \boxed{i^2=-1}
-\]
+$$
 
 Complex numbers can be represented geometrically on a two-dimensional plane.
 
@@ -1016,33 +1038,33 @@ The vertical axis represents imaginary values.
 
 Consider the number:
 
-\[
+$$
 z=1
-\]
+$$
 
-Multiply it by \(i\):
+Multiply it by $i$:
 
-\[
+$$
 1\times i=i
-\]
+$$
 
 Multiply again:
 
-\[
+$$
 i\times i=i^2=-1
-\]
+$$
 
 Again:
 
-\[
+$$
 -i
-\]
+$$
 
 And again:
 
-\[
+$$
 (-i)i=-i^2=1
-\]
+$$
 
 Therefore:
 
@@ -1050,41 +1072,45 @@ Therefore:
 1 → i → -1 → -i → 1
 ```
 
-Every multiplication by \(i\) rotates the point by 90 degrees counter-clockwise.
+Every multiplication by $i$ rotates the point by 90 degrees counter-clockwise.
 
 Importantly, the distance from the origin stays the same.
+
+![Multiplying by i rotates 90 degrees around the unit circle](assets/rotation_by_i.svg)
 
 ## 9.3 Euler's formula
 
 A powerful mathematical relationship is:
 
-\[
+$$
 \boxed{
 e^{i\theta}=\cos\theta+i\sin\theta
 }
-\]
+$$
 
 This allows us to represent rotation using complex exponentials.
 
 For example:
 
-\[
+$$
 e^{i0}=1
-\]
+$$
 
-\[
+$$
 e^{i\pi/2}=i
-\]
+$$
 
-\[
+$$
 e^{i\pi}=-1
-\]
+$$
 
-\[
+$$
 e^{i3\pi/2}=-i
-\]
+$$
 
 These values lie on a circle with radius 1, called the unit circle.
+
+![Euler's formula on the unit circle](assets/euler.svg)
 
 ### Why does this matter?
 
@@ -1100,59 +1126,61 @@ These numbers are called roots of unity.
 
 An N-th root of unity is a complex number that satisfies:
 
-\[
+$$
 z^N=1
-\]
+$$
 
 For example, consider:
 
-\[
+$$
 z^4=1
-\]
+$$
 
 The four solutions are:
 
-\[
+$$
 1,\quad i,\quad -1,\quad -i
-\]
+$$
 
 All four values lie on the unit circle.
 
 They are evenly spaced.
 
+![4th and 8th roots of unity on the unit circle](assets/roots_of_unity.svg)
+
 ## 10.2 General formula
 
 The N-th roots of unity are:
 
-\[
+$$
 \boxed{
 \omega_k=e^{i2\pi k/N}
 }
-\]
+$$
 
 Where:
 
-\[
+$$
 k=0,1,2,\ldots,N-1
-\]
+$$
 
 The fundamental root is:
 
-\[
+$$
 \omega=e^{i2\pi/N}
-\]
+$$
 
 All other roots can be generated using its powers:
 
-\[
+$$
 1,\omega,\omega^2,\ldots,\omega^{N-1}
-\]
+$$
 
 And:
 
-\[
+$$
 \boxed{\omega^N=1}
-\]
+$$
 
 ## 10.3 Three important properties
 
@@ -1160,9 +1188,9 @@ And:
 
 Because:
 
-\[
+$$
 \omega^N=1
-\]
+$$
 
 Higher powers simply repeat the same rotations.
 
@@ -1174,21 +1202,21 @@ For an even number of roots, opposite points on the circle become identical afte
 
 For example:
 
-\[
+$$
 1^2=1
-\]
+$$
 
-\[
+$$
 (-1)^2=1
-\]
+$$
 
-\[
+$$
 i^2=-1
-\]
+$$
 
-\[
+$$
 (-i)^2=-1
-\]
+$$
 
 This symmetry is extremely useful in FFT.
 
@@ -1196,21 +1224,21 @@ It allows us to split calculations into smaller problems.
 
 ### Property 3: The roots sum to zero
 
-For \(N>1\):
+For $N>1$:
 
-\[
+$$
 \boxed{
 1+\omega+\omega^2+\cdots+\omega^{N-1}=0
 }
-\]
+$$
 
 The points are evenly distributed around the circle, so their directions cancel out.
 
 For four roots:
 
-\[
+$$
 1+i-1-i=0
-\]
+$$
 
 ### Why are roots of unity important?
 
@@ -1230,25 +1258,25 @@ DFT stands for Discrete Fourier Transform.
 
 It transforms a sequence of numbers into another sequence representing its frequency components.
 
-For a sequence \(x[n]\) of length \(N\):
+For a sequence $x[n]$ of length $N$:
 
-\[
+$$
 \boxed{
 X[k]=
 \sum_{n=0}^{N-1}
 x[n]e^{-i2\pi kn/N}
 }
-\]
+$$
 
-For each frequency index \(k\), we calculate a weighted sum of the original sequence.
+For each frequency index $k$, we calculate a weighted sum of the original sequence.
 
 Another way to understand this is polynomial evaluation.
 
 Consider a polynomial:
 
-\[
+$$
 P(x)=a_0+a_1x+a_2x^2+\cdots
-\]
+$$
 
 DFT evaluates this polynomial at specially selected complex points: the roots of unity.
 
@@ -1264,17 +1292,17 @@ It is an efficient algorithm for computing the DFT.
 
 The standard direct DFT requires:
 
-\[
+$$
 O(N^2)
-\]
+$$
 
 operations.
 
 FFT reduces this to:
 
-\[
+$$
 \boxed{O(N\log N)}
-\]
+$$
 
 The famous Cooley–Tukey FFT algorithm uses a divide-and-conquer strategy.
 
@@ -1289,9 +1317,9 @@ It then calculates smaller transforms and combines their results.
 
 Suppose we have:
 
-\[
+$$
 x=[x_0,x_1,x_2,x_3,x_4,x_5,x_6,x_7]
-\]
+$$
 
 Split into:
 
@@ -1315,14 +1343,30 @@ The roots of unity have symmetry that allows the same intermediate calculations 
 
 This reduces the total work.
 
+```mermaid
+flowchart TD
+    A["DFT of size 8<br/>x0 … x7"] --> B["size 4 (even)<br/>x0, x2, x4, x6"]
+    A --> C["size 4 (odd)<br/>x1, x3, x5, x7"]
+    B --> D["size 2<br/>x0, x4"]
+    B --> E["size 2<br/>x2, x6"]
+    C --> F["size 2<br/>x1, x5"]
+    C --> G["size 2<br/>x3, x7"]
+    D --> H["Combine back up using root-of-unity symmetry<br/>log₂8 = 3 levels × O(N) work per level = O(N log N)"]
+    E --> H
+    F --> H
+    G --> H
+```
+
 ## 11.4 Complexity comparison
 
 | Algorithm | Time complexity |
 |---|---|
-| Direct DFT | \(O(N^2)\) |
-| FFT | \(O(N\log N)\) |
+| Direct DFT | $O(N^2)$ |
+| FFT | $O(N\log N)$ |
 
 For large inputs, this is a major improvement.
+
+![N squared versus N log N on a log-log plot](assets/complexity.png)
 
 ---
 
@@ -1332,19 +1376,19 @@ Now we combine everything.
 
 Remember:
 
-\[
+$$
 \text{Polynomial multiplication}
 =
 \text{Convolution}
-\]
+$$
 
 Also:
 
-\[
+$$
 \text{Multiplying polynomial values}
 =
 \text{Multiplying their evaluations pointwise}
-\]
+$$
 
 This gives us a fast method for convolution.
 
@@ -1367,29 +1411,29 @@ flowchart TD
 
 Suppose:
 
-\[
+$$
 A=[1,2,3]
-\]
+$$
 
-\[
+$$
 B=[4,5]
-\]
+$$
 
 The full convolution length must be:
 
-\[
+$$
 3+2-1=4
-\]
+$$
 
 We pad the sequences with zeros to at least length 4:
 
-\[
+$$
 A=[1,2,3,0]
-\]
+$$
 
-\[
+$$
 B=[4,5,0,0]
-\]
+$$
 
 This prevents circular wrap-around from corrupting the desired linear convolution.
 
@@ -1397,13 +1441,13 @@ This prevents circular wrap-around from corrupting the desired linear convolutio
 
 Transform both sequences:
 
-\[
+$$
 A'=FFT(A)
-\]
+$$
 
-\[
+$$
 B'=FFT(B)
-\]
+$$
 
 Now we have their frequency-domain representations.
 
@@ -1411,9 +1455,9 @@ Now we have their frequency-domain representations.
 
 Multiply corresponding elements:
 
-\[
+$$
 C'[k]=A'[k]B'[k]
-\]
+$$
 
 This is much simpler than performing the sliding multiplication directly.
 
@@ -1421,15 +1465,15 @@ This is much simpler than performing the sliding multiplication directly.
 
 Transform the result back:
 
-\[
+$$
 C=IFFT(C')
-\]
+$$
 
 We obtain:
 
-\[
+$$
 \boxed{C=[4,13,22,15]}
-\]
+$$
 
 This is exactly the same result as direct convolution.
 
@@ -1437,22 +1481,22 @@ This is exactly the same result as direct convolution.
 
 The complexity becomes:
 
-- FFT of A: \(O(N\log N)\)
-- FFT of B: \(O(N\log N)\)
-- Pointwise multiplication: \(O(N)\)
-- Inverse FFT: \(O(N\log N)\)
+- FFT of A: $O(N\log N)$
+- FFT of B: $O(N\log N)$
+- Pointwise multiplication: $O(N)$
+- Inverse FFT: $O(N\log N)$
 
 Overall:
 
-\[
+$$
 \boxed{O(N\log N)}
-\]
+$$
 
 Instead of:
 
-\[
+$$
 O(N^2)
-\]
+$$
 
 ## 12.3 Practical Python example
 
@@ -1501,7 +1545,7 @@ A grayscale image can be represented as a matrix.
 
 For example:
 
-\[
+$$
 I=
 \begin{bmatrix}
 10&20&30&40&50\\
@@ -1510,15 +1554,15 @@ I=
 25&35&45&55&65\\
 30&40&50&60&70
 \end{bmatrix}
-\]
+$$
 
 Each number represents pixel intensity.
 
 For a typical 8-bit grayscale image:
 
-\[
+$$
 0\leq pixel\ value\leq255
-\]
+$$
 
 Where:
 
@@ -1534,20 +1578,22 @@ A colour image usually has three channels:
 
 Therefore, an RGB image is represented using three matrices stacked together.
 
+![Grayscale image as a matrix and RGB image as three stacked matrices](assets/image_matrix.svg)
+
 ## 13.2 What is a 2D kernel?
 
 A kernel is a small matrix that moves across the image.
 
 For example:
 
-\[
+$$
 K=
 \begin{bmatrix}
 1&0&-1\\
 1&0&-1\\
 1&0&-1
 \end{bmatrix}
-\]
+$$
 
 It can respond strongly to vertical intensity changes.
 
@@ -1555,7 +1601,7 @@ It can respond strongly to vertical intensity changes.
 
 Suppose the input image is:
 
-\[
+$$
 I=
 \begin{bmatrix}
 1&2&3&4\\
@@ -1563,42 +1609,44 @@ I=
 9&10&11&12\\
 13&14&15&16
 \end{bmatrix}
-\]
+$$
 
 And the kernel is:
 
-\[
+$$
 K=
 \begin{bmatrix}
 1&0\\
 0&-1
 \end{bmatrix}
-\]
+$$
 
 Place the kernel over the top-left 2 × 2 region:
 
-\[
+$$
 \begin{bmatrix}
 1&2\\
 5&6
 \end{bmatrix}
-\]
+$$
 
 Multiply corresponding elements and add:
 
-\[
+$$
 (1\times1)+(2\times0)+(5\times0)+(6\times-1)
-\]
+$$
 
-\[
+$$
 =1-6=-5
-\]
+$$
 
 Move the kernel one position to the right and repeat.
 
 Continue until every valid position has been processed.
 
 The result is a new matrix called the feature map or activation map.
+
+![2x2 kernel sliding over a 4x4 input to produce a 3x3 feature map](assets/conv2d_step.svg)
 
 **The same principle applies as in 1D convolution. The only difference is that now we slide in two spatial dimensions.**
 
@@ -1616,7 +1664,7 @@ A box blur averages neighbouring pixels.
 
 A 3 × 3 kernel can be:
 
-\[
+$$
 K=
 \frac19
 \begin{bmatrix}
@@ -1624,7 +1672,7 @@ K=
 1&1&1\\
 1&1&1
 \end{bmatrix}
-\]
+$$
 
 Each output pixel becomes the average of the surrounding 3 × 3 region.
 
@@ -1640,7 +1688,7 @@ A Gaussian blur gives more importance to the centre pixel and less importance to
 
 Example:
 
-\[
+$$
 K=
 \frac1{16}
 \begin{bmatrix}
@@ -1648,7 +1696,7 @@ K=
 2&4&2\\
 1&2&1
 \end{bmatrix}
-\]
+$$
 
 The centre has the highest weight.
 
@@ -1660,14 +1708,14 @@ An edge detector identifies places where pixel intensity changes sharply.
 
 Example vertical edge kernel:
 
-\[
+$$
 K=
 \begin{bmatrix}
 -1&0&1\\
 -1&0&1\\
 -1&0&1
 \end{bmatrix}
-\]
+$$
 
 Over a flat region, the positive and negative contributions approximately cancel.
 
@@ -1675,14 +1723,16 @@ At a vertical boundary, they do not cancel, so the output becomes large.
 
 A horizontal edge detector can use:
 
-\[
+$$
 K=
 \begin{bmatrix}
 -1&-1&-1\\
 0&0&0\\
 1&1&1
 \end{bmatrix}
-\]
+$$
+
+![Box blur, Gaussian blur and edge kernels applied to a test image](assets/kernel_effects.png)
 
 ## 14.4 Summary of traditional image kernels
 
@@ -1779,25 +1829,25 @@ Consider a 32 × 32 RGB image.
 
 It contains:
 
-\[
+$$
 32\times32\times3=3072
-\]
+$$
 
 values.
 
 An MLP flattens the image into a vector:
 
-\[
+$$
 x\in\mathbb{R}^{3072}
-\]
+$$
 
 Then a fully connected layer connects all 3072 values to every output neuron.
 
 For example, if there are 10 output classes:
 
-\[
+$$
 W\in\mathbb{R}^{10\times3072}
-\]
+$$
 
 Every output neuron has a separate weight for every input pixel.
 
@@ -1824,6 +1874,8 @@ CNNs solve these problems through:
 1. Local connectivity.
 2. Weight sharing.
 
+![Fully connected layer versus convolution: local connectivity and weight sharing](assets/mlp_vs_cnn.svg)
+
 ---
 
 # 17. Convolution Layer: The Core of CNNs
@@ -1838,9 +1890,9 @@ In a convolution layer, a filter looks at a small local region.
 
 For example, a 32 × 32 RGB image has:
 
-\[
+$$
 3\times32\times32
-\]
+$$
 
 values.
 
@@ -1850,9 +1902,9 @@ A convolution layer instead uses a small filter.
 
 For example:
 
-\[
+$$
 3\times5\times5
-\]
+$$
 
 This means:
 
@@ -1866,15 +1918,15 @@ This means:
 
 Suppose the input is:
 
-\[
+$$
 X\in\mathbb{R}^{3\times32\times32}
-\]
+$$
 
 And the filter is:
 
-\[
+$$
 W\in\mathbb{R}^{3\times5\times5}
-\]
+$$
 
 At one spatial position:
 
@@ -1885,16 +1937,18 @@ At one spatial position:
 
 Mathematically:
 
-\[
+$$
 y=\sum_{c=1}^{3}\sum_{i=1}^{5}\sum_{j=1}^{5}
 W_{cij}X_{cij}+b
-\]
+$$
 
 This produces one scalar.
 
 Move the filter across the image and repeat.
 
 The resulting values form a 2D activation map.
+
+![A 3x5x5 filter over a 3x32x32 input producing a 28x28 activation map](assets/conv_volume.svg)
 
 ## 17.3 What if we have multiple filters?
 
@@ -1939,22 +1993,22 @@ Each channel corresponds to the response of one learned filter.
 
 In PyTorch, convolution layers commonly use the following tensor layout:
 
-\[
+$$
 (N,C,H,W)
-\]
+$$
 
 Where:
 
-- \(N\) = batch size.
-- \(C\) = number of channels.
-- \(H\) = image height.
-- \(W\) = image width.
+- $N$ = batch size.
+- $C$ = number of channels.
+- $H$ = image height.
+- $W$ = image width.
 
 For example:
 
-\[
+$$
 X\in\mathbb{R}^{32\times3\times224\times224}
-\]
+$$
 
 This represents:
 
@@ -1967,36 +2021,38 @@ This represents:
 
 For a convolution layer:
 
-\[
+$$
 W\in\mathbb{R}^{C_{out}\times C_{in}\times K_H\times K_W}
-\]
+$$
 
 Where:
 
-- \(C_{out}\) = number of filters.
-- \(C_{in}\) = number of input channels.
-- \(K_H\) = filter height.
-- \(K_W\) = filter width.
+- $C_{out}$ = number of filters.
+- $C_{in}$ = number of input channels.
+- $K_H$ = filter height.
+- $K_W$ = filter width.
 
 For example:
 
-\[
+$$
 W\in\mathbb{R}^{6\times3\times5\times5}
-\]
+$$
 
 This means six filters, each containing:
 
-\[
+$$
 3\times5\times5=75
-\]
+$$
 
 weights.
 
 The convolution output has shape:
 
-\[
+$$
 (N,C_{out},H',W')
-\]
+$$
+
+![Six filters produce six stacked feature maps](assets/filter_bank.svg)
 
 ## 18.2 Why do we stack feature maps?
 
@@ -2094,21 +2150,23 @@ Move two pixels at a time.
 
 Larger stride generally produces smaller feature maps.
 
+![Stride 1 versus stride 2 filter placements](assets/stride.svg)
+
 ## 20.2 Padding
 
 Without padding, a filter cannot extend beyond the image boundary.
 
 For example, a 3 × 3 filter on a 5 × 5 image produces:
 
-\[
+$$
 5-3+1=3
-\]
+$$
 
 Therefore, output dimensions are:
 
-\[
+$$
 3\times3
-\]
+$$
 
 Every convolution reduces spatial dimensions unless padding is used.
 
@@ -2116,42 +2174,44 @@ Zero padding solves this by adding zeros around the image.
 
 For a 3 × 3 kernel, padding 1 adds one zero layer around the image.
 
+![No padding shrinks 5x5 to 3x3; zero padding 1 keeps 5x5](assets/padding.svg)
+
 ## 20.3 General output formula
 
 For a convolution with:
 
-- Input width \(W\).
-- Kernel width \(K\).
-- Padding \(P\).
-- Stride \(S\).
+- Input width $W$.
+- Kernel width $K$.
+- Padding $P$.
+- Stride $S$.
 
 The output width is:
 
-\[
+$$
 \boxed{
 W'=\left\lfloor
 \frac{W-K+2P}{S}
 \right\rfloor+1
 }
-\]
+$$
 
 Similarly, for height:
 
-\[
+$$
 \boxed{
 H'=\left\lfloor
 \frac{H-K_H+2P_H}{S_H}
 \right\rfloor+1
 }
-\]
+$$
 
 The floor operation is important when the division does not produce an integer.
 
 For odd-sized kernels and stride 1, choosing:
 
-\[
+$$
 P=\frac{K-1}{2}
-\]
+$$
 
 preserves spatial dimensions.
 
@@ -2167,50 +2227,50 @@ For example:
 
 Input:
 
-\[
+$$
 28\times28
-\]
+$$
 
 Kernel:
 
-\[
+$$
 3\times3
-\]
+$$
 
 Stride:
 
-\[
+$$
 S=2
-\]
+$$
 
 Padding:
 
-\[
+$$
 P=1
-\]
+$$
 
 Output:
 
-\[
+$$
 W'=
 \left\lfloor
 \frac{28-3+2}{2}
 \right\rfloor+1
-\]
+$$
 
-\[
+$$
 =\lfloor13.5\rfloor+1
-\]
+$$
 
-\[
+$$
 \boxed{14}
-\]
+$$
 
 Output shape:
 
-\[
+$$
 14\times14
-\]
+$$
 
 ---
 
@@ -2228,9 +2288,9 @@ Each output value sees a 3 × 3 region of the original image.
 
 Therefore:
 
-\[
+$$
 RF_1=3\times3
-\]
+$$
 
 Now add another 3 × 3 convolution layer with stride 1.
 
@@ -2240,15 +2300,15 @@ But every previous feature-map value already represents a 3 × 3 region of the o
 
 Therefore, the effective receptive field becomes:
 
-\[
+$$
 RF_2=5\times5
-\]
+$$
 
 A third 3 × 3 layer produces:
 
-\[
+$$
 RF_3=7\times7
-\]
+$$
 
 ### Visual intuition
 
@@ -2270,6 +2330,8 @@ Conv Layer 3
 
 With stride 1, each additional 3 × 3 convolution increases the receptive field by two pixels in each dimension.
 
+![Receptive field growing from 3 to 5 to 7 across three conv layers](assets/receptive_field.svg)
+
 ## 21.2 Why does this matter?
 
 Early layers detect local patterns.
@@ -2290,52 +2352,52 @@ When strides are greater than 1, receptive fields grow faster.
 
 A useful general formula is:
 
-\[
+$$
 r_l=r_{l-1}+(k_l-1)j_{l-1}
-\]
+$$
 
-\[
+$$
 j_l=j_{l-1}s_l
-\]
+$$
 
 Where:
 
-- \(r_l\) = receptive field at layer \(l\).
-- \(j_l\) = spacing between adjacent layer outputs measured in input pixels.
-- \(k_l\) = kernel size.
-- \(s_l\) = stride.
+- $r_l$ = receptive field at layer $l$.
+- $j_l$ = spacing between adjacent layer outputs measured in input pixels.
+- $k_l$ = kernel size.
+- $s_l$ = stride.
 
 Initialize:
 
-\[
+$$
 r_0=1,\quad j_0=1
-\]
+$$
 
 For two 3 × 3 convolutions:
 
 **First layer:**
 
-\[
+$$
 r_1=1+(3-1)(1)=3
-\]
+$$
 
 **Second layer, stride 1:**
 
-\[
+$$
 r_2=3+(3-1)(1)=5
-\]
+$$
 
 If the second layer has stride 2:
 
-\[
+$$
 r_2=3+(3-1)(1)=5
-\]
+$$
 
 But the spacing becomes:
 
-\[
+$$
 j_2=1\times2=2
-\]
+$$
 
 This spacing causes later layers to cover the original image more rapidly.
 
@@ -2355,9 +2417,11 @@ Therefore, simply stacking convolution layers without nonlinearities does not gi
 
 We need activation functions such as ReLU.
 
-\[
+$$
 ReLU(x)=\max(0,x)
-\]
+$$
+
+![Plot of ReLU](assets/relu.png)
 
 A typical pattern is:
 
@@ -2394,9 +2458,9 @@ Pooling reduces the spatial dimensions of feature maps.
 
 Suppose a convolution layer produces:
 
-\[
+$$
 64\times224\times224
-\]
+$$
 
 Processing such large feature maps through many more layers can be expensive.
 
@@ -2404,15 +2468,15 @@ Pooling reduces their height and width.
 
 For example:
 
-\[
+$$
 64\times224\times224
-\]
+$$
 
 becomes:
 
-\[
+$$
 64\times112\times112
-\]
+$$
 
 The number of channels remains unchanged.
 
@@ -2422,7 +2486,7 @@ A common operation is 2 × 2 max pooling with stride 2.
 
 Consider:
 
-\[
+$$
 X=
 \begin{bmatrix}
 1&3&2&4\\
@@ -2430,7 +2494,7 @@ X=
 7&2&8&3\\
 4&9&5&6
 \end{bmatrix}
-\]
+$$
 
 Divide it into four 2 × 2 regions.
 
@@ -2446,42 +2510,44 @@ Take the maximum from each region.
 
 Top-left:
 
-\[
+$$
 \max(1,3,5,6)=6
-\]
+$$
 
 Top-right:
 
-\[
+$$
 \max(2,4,1,2)=4
-\]
+$$
 
 Bottom-left:
 
-\[
+$$
 \max(7,2,4,9)=9
-\]
+$$
 
 Bottom-right:
 
-\[
+$$
 \max(8,3,5,6)=8
-\]
+$$
 
 Output:
 
-\[
+$$
 \boxed{
 \begin{bmatrix}
 6&4\\
 9&8
 \end{bmatrix}
 }
-\]
+$$
 
 The original matrix was 4 × 4.
 
 The output is 2 × 2.
+
+![2x2 max pooling with stride 2 on a 4x4 feature map](assets/maxpool.svg)
 
 ## 23.3 Types of pooling
 
@@ -2576,11 +2642,13 @@ Ignoring boundary effects, the results correspond.
 
 Mathematically:
 
-\[
+$$
 Conv(T(x))=T(Conv(x))
-\]
+$$
 
-Where \(T\) represents a spatial translation.
+Where $T$ represents a spatial translation.
+
+![Shift then convolve equals convolve then shift](assets/equivariance.svg)
 
 ## 24.3 Why does convolution have this property?
 
@@ -2617,9 +2685,9 @@ The image enters the CNN as a tensor.
 
 For an RGB image:
 
-\[
+$$
 X\in\mathbb{R}^{3\times224\times224}
-\]
+$$
 
 ### Stage 1: Initial feature extraction
 
@@ -2688,6 +2756,8 @@ flowchart TD
     A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K --> L
 ```
 
+![Complete CNN architecture from 3x224x224 input to class probabilities](assets/cnn_architecture.svg)
+
 The exact architecture varies between CNN models.
 
 Some use many convolution blocks. Others use global average pooling rather than flattening the entire feature map.
@@ -2702,21 +2772,21 @@ Suppose we have a 224 × 224 RGB image.
 
 Input size:
 
-\[
+$$
 224\times224\times3=150,528
-\]
+$$
 
 Imagine connecting this to 1,000 neurons in an MLP.
 
 Number of weights:
 
-\[
+$$
 150,528\times1,000
-\]
+$$
 
-\[
+$$
 =150,528,000
-\]
+$$
 
 That is over 150 million weights, excluding biases.
 
@@ -2728,27 +2798,29 @@ Now consider a CNN layer with:
 
 Each filter contains:
 
-\[
+$$
 3\times5\times5=75
-\]
+$$
 
 weights.
 
 Including one bias:
 
-\[
+$$
 75+1=76
-\]
+$$
 
 For ten filters:
 
-\[
+$$
 10\times76=760
-\]
+$$
 
 Only 760 learnable parameters!
 
 This is a dramatic reduction.
+
+![Parameter count: MLP layer versus convolution layer](assets/param_comparison.png)
 
 ### Comparison
 
@@ -2808,6 +2880,8 @@ In pure mathematical convolution, we flip the kernel before sliding it.
 In most deep learning libraries, including PyTorch, the kernel is not flipped.
 
 The operation is technically cross-correlation.
+
+![Kernel rotated 180 degrees: convolution versus cross-correlation](assets/kernel_flip.svg)
 
 However, the operation is commonly called convolution in deep learning.
 
@@ -2934,6 +3008,8 @@ Fully Connected:
 10 outputs
 ```
 
+![SimpleCNN layer shapes on 28x28 FashionMNIST input](assets/simple_cnn.svg)
+
 The model predicts one of ten FashionMNIST classes.
 
 Notice that the training loop is essentially the same as an MLP.
@@ -2972,6 +3048,8 @@ It used:
 
 It demonstrated that learned convolutional features could work very effectively for image recognition.
 
+![LeNet-5 architecture](assets/lenet5.svg)
+
 ## 28.2 AlexNet (2012)
 
 AlexNet was a major turning point in computer vision.
@@ -3001,17 +3079,28 @@ ResNet introduced residual connections.
 
 Instead of learning only:
 
-\[
+$$
 H(x)
-\]
+$$
 
 A residual block learns:
 
-\[
+$$
 \boxed{F(x)+x}
-\]
+$$
 
 The input can bypass some layers through a shortcut connection.
+
+```mermaid
+flowchart TD
+    X["Input x"] --> C1["Conv + ReLU"]
+    C1 --> C2["Conv"]
+    C2 --> F["F(x)"]
+    F --> ADD(("+"))
+    X -. "shortcut: identity" .-> ADD
+    ADD --> R["ReLU"]
+    R --> Y["Output: F(x) + x"]
+```
 
 This helps gradients flow through very deep networks.
 
@@ -3060,6 +3149,8 @@ The same idea works with different types of data.
 | 1D | Moves along one dimension | Audio, time series |
 | 2D | Moves across height and width | Images |
 | 3D | Moves across three spatial dimensions | Videos, medical volumes |
+
+![1D, 2D and 3D convolution](assets/conv_dims.svg)
 
 ## 29.1 1D convolution
 
@@ -3123,14 +3214,14 @@ This section is intended for future revision.
 | Concept | Remember |
 |---|---|
 | Discrete convolution | Flip, slide, multiply and add |
-| Output length | \(N+M-1\) for full convolution |
+| Output length | $N+M-1$ for full convolution |
 | Probability convolution | Distribution of the sum of independent random variables |
 | Continuous convolution | Uses integration instead of summation |
 | Polynomial multiplication | Equivalent to coefficient convolution |
 | Toeplitz matrix | Matrix representation of convolution |
-| Complex numbers | Numbers of the form \(a+bi\) |
+| Complex numbers | Numbers of the form $a+bi$ |
 | Unit circle | Complex numbers with magnitude 1 |
-| Roots of unity | Solutions to \(z^N=1\) |
+| Roots of unity | Solutions to $z^N=1$ |
 | DFT | Converts a sequence into frequency-domain values |
 | FFT | Efficient algorithm for computing DFT |
 | FFT convolution | FFT → pointwise multiplication → inverse FFT |
@@ -3166,9 +3257,9 @@ Try answering these without looking at the notes.
 
 **Q3.** Calculate:
 
-\[
+$$
 [1,2,3]*[4,5]
-\]
+$$
 
 **Q4.** Why is polynomial multiplication equivalent to convolution?
 
@@ -3370,4 +3461,3 @@ Topics:
 **End of Chapter: Convolution to CNNs**
 
 *Learn the operation. Understand the mathematics. Implement it. Then understand how the network learns it.*
-EOF
