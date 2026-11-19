@@ -1,11 +1,12 @@
+from pathlib import Path
 import torch
 from torch import nn
-from training import train_model
-from dataset import train_loader
-from dataset import test_loader
-from model import MyNeuralNetwork
-from checkpoint import load_checkpoint
-from checkpoint import save_checkpoint
+from first_pytorch_training.training import train_model
+from first_pytorch_training.dataset import train_loader
+from first_pytorch_training.dataset import test_loader
+from first_pytorch_training.model import MyNeuralNetwork
+from first_pytorch_training.checkpoint import load_checkpoint
+from first_pytorch_training.checkpoint import save_checkpoint
 
 def checkpoint_verification(model_for_training, filepath, loss_fn, optimizer, device,epoch):
 
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     model_for_training.to(device)
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model_for_training.parameters(), lr=1e-3)
-    filepath = "checkpoints/fashion_mnist2.pth"
+    filepath = Path(__file__).resolve().parent / "checkpoints" / "fashion_mnist2.pth"
     epoch = 5
 
     print(checkpoint_verification(model_for_training,filepath,loss_fn,optimizer,device,epoch))

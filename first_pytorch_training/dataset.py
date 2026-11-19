@@ -4,6 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms , datasets
 from torch.utils.data import random_split
+from common.paths import DATA_DIR
 
 
 # constants 
@@ -18,14 +19,14 @@ transform = transforms.Compose([
 
 # 2. Download and load the full training set and test set
 full_train_dataset = datasets.FashionMNIST (
-    root='data',
+    root=DATA_DIR,
     train=True,
     download=True,
     transform=transform 
 )
 
 test_dataset = datasets.FashionMNIST(
-    root='data',
+    root=DATA_DIR,
     train=False,
     download=True,
     transform=transform    

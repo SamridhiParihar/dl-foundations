@@ -28,7 +28,7 @@ class MyNeuralNetwork(nn.Module):
 # smaller test version before actual training 
 
 if __name__ == "__main__":
-    from dataset import train_loader
+    from first_pytorch_training.dataset import train_loader
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     model = MyNeuralNetwork().to(   

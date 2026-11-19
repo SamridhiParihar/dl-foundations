@@ -1,10 +1,7 @@
 import torch
 from torch import nn
-from evaluation import evaluate_model
-from model import MyNeuralNetwork
-from dataset import train_loader , val_loader
-from plotting import plot_losses
-from checkpoint import save_checkpoint
+from pathlib import Path
+from first_pytorch_training.evaluation import evaluate_model
 
 
 
@@ -86,6 +83,12 @@ def train_model_with_val(model,train_loader,val_loader , loss_fn,optimizer,devic
 
 
 if __name__ == "__main__":
+    # script-only imports: kept here so `import first_pytorch_training.training`
+    # from another chapter doesn't load the MLP or the dataset as a side effect
+    from first_pytorch_training.model import MyNeuralNetwork
+    from first_pytorch_training.dataset import train_loader , val_loader
+    from first_pytorch_training.plotting import plot_losses
+    from first_pytorch_training.checkpoint import save_checkpoint
 
 
 
@@ -127,7 +130,7 @@ if __name__ == "__main__":
     )
 
     # saving the check point 
-    save_checkpoint(model,"checkpoints/fashion_mnist.pth")
+    save_checkpoint(model, Path(__file__).resolve().parent / "checkpoints" / "fashion_mnist.pth")
 
     # plotting 
     plot_losses(epoch_losses_train, epoch_losses_val)

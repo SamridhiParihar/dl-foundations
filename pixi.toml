@@ -5,6 +5,8 @@ platforms = ["osx-arm64"]
 version = "0.1.0"
 
 [tasks]
+mlp-train = "python -m first_pytorch_training.training"
+cnn-train = "python 06-cnn/training.py"
 
 [dependencies]
 python = "3.12.*"
@@ -16,3 +18,7 @@ jupyterlab = ">=4.6.4,<5"
 scikit-learn = ">=1.9.1,<2"
 graphviz = ">=14.1.2,<15"
 python-graphviz = ">=0.21,<0.22"
+
+
+[pypi-dependencies]
+dl-foundations = { path = ".", editable = true }

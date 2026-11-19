@@ -1,9 +1,9 @@
 import torch
 import time
 from torch import nn
-from model import MyNeuralNetwork
-from training import train_one_epoch
-from dataset import train_loader
+from first_pytorch_training.model import MyNeuralNetwork
+from first_pytorch_training.training import train_one_epoch
+from first_pytorch_training.dataset import train_loader
 
 
 def benchmark_device(device, epochs=5):

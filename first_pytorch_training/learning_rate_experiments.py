@@ -1,10 +1,10 @@
 import torch 
 from torch import nn
-from model import MyNeuralNetwork
-from training import train_model_with_val
-from dataset import train_loader
-from dataset import val_loader
-from plotting import plot_lr_experiments
+from first_pytorch_training.model import MyNeuralNetwork
+from first_pytorch_training.training import train_model_with_val
+from first_pytorch_training.dataset import train_loader
+from first_pytorch_training.dataset import val_loader
+from first_pytorch_training.plotting import plot_lr_experiments
 
 
 def learning_rate_experiments(learning_rates, device, epochs, train_loader, val_loader):

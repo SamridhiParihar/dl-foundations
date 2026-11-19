@@ -1,0 +1,20 @@
+# Makes the shared code in this repo an installable Python package.
+# pixi installs it in "editable" mode (see [pypi-dependencies] in pixi.toml), so
+# `import first_pytorch_training` and `import common` work from ANY script,
+# in ANY folder, no matter which directory you run the command from.
+# Runtime dependencies (torch, numpy, ...) stay in pixi.toml (conda-forge).
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dl-foundations"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+# Folders that are importable packages. Chapter folders like 06-cnn are not
+# listed: a name with a hyphen or a leading digit can't be imported in Python.
+packages = ["first_pytorch_training", "common"]
