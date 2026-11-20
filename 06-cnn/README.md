@@ -3461,3 +3461,9 @@ Topics:
 **End of Chapter: Convolution to CNNs**
 
 *Learn the operation. Understand the mathematics. Implement it. Then understand how the network learns it.*
+
+---
+
+## Continue to Part 2
+
+➡️ **[Building and Training CNNs](building-and-training-cnns.md)**: notes from Stanford CS231n Lecture 6 covering normalization layers, dropout, activation functions, VGG, ResNet, weight initialization, data preprocessing and augmentation, transfer learning, and debugging/hyperparameter tuning.

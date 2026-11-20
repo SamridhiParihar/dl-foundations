@@ -14,6 +14,8 @@ What this script shows, in 4 steps:
 Pictures are saved to 06-cnn/outputs/ and also opened in windows at the end.
 """
 
+# this is generated file ...just for understanding and visualization of filters and feature maps 
+
 import torch
 from pathlib import Path
 import matplotlib.pyplot as plt

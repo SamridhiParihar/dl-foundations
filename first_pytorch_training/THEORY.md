@@ -34,6 +34,21 @@ $$
 
 Here `fθ` is the neural network and `ℓ` is a loss function. In PyTorch, the dataset supplies `(x_i, y_i)`, the model computes `fθ(x_i)`, autograd calculates the derivative of the loss, and an optimizer changes `θ`.
 
+```mermaid
+flowchart LR
+    D["FashionMNIST<br/>Dataset"] --> L["DataLoader<br/>batches of 64"]
+    L -->|"X [64,1,28,28]"| M["MLP<br/>(model.py)"]
+    M -->|"logits [64,10]"| C["CrossEntropyLoss"]
+    L -->|"y [64]"| C
+    C -->|"loss.backward()"| G["gradients<br/>in .grad"]
+    G -->|"optimizer.step()"| M
+    M -.->|"model.eval() + no_grad"| E["validation / test<br/>loss + accuracy"]
+    M -.->|"state_dict()"| K["checkpoint .pth"]
+```
+
+![FashionMNIST samples](figures/fashion_mnist_samples.png)
+
+
 ---
 
 ## 5.1.1 — Datasets and DataLoaders
@@ -140,6 +155,9 @@ print(images.shape, labels.shape)
 # torch.Size([64, 1, 28, 28]) torch.Size([64])
 ```
 
+
+![From one example to a batch](figures/batch_shapes.svg)
+
 The DataLoader stacks the individual examples along a new leading batch axis. With batch size `B`:
 
 | Value | Shape | Meaning |
@@ -162,6 +180,9 @@ These splits have different jobs:
 - **Test set:** held aside for a final estimate after model choices are finished.
 
 Do not tune a model repeatedly against the test set and then treat its score as an unbiased final estimate. That leaks information from the test set into model selection.
+
+
+![Data split](figures/data_split.svg)
 
 FashionMNIST supplies an official training partition and test partition. A validation set can be carved out of the training partition, for example with `random_split`; use a fixed generator seed if you need a repeatable split. The evaluation loop later in this guide can be used for either validation or test data.
 
@@ -244,6 +265,9 @@ Let `B` be the batch size. A 28-by-28 image contains 784 pixel values, so `Flatt
 | `Linear(128, 64)` + ReLU | `[B, 64]` |
 | `Linear(64, 10)` | `[B, 10]` |
 
+
+![MLP architecture](figures/mlp_architecture.svg)
+
 The final dimension has ten scores, one per FashionMNIST class. A forward pass can be inspected with:
 
 ```python
@@ -273,6 +297,19 @@ probabilities = torch.softmax(logits, dim=1)  # shape [B, 10]
 
 The probabilities for each example sum to approximately one. For training with `nn.CrossEntropyLoss`, pass logits directly; it combines a numerically stable log-softmax with the negative log-likelihood. Applying softmax first is both unnecessary and incorrect for this loss.
 
+**A real example.** Below is test image #10 passed through a trained `MyNeuralNetwork` (the 5-epoch reproduction from the README). The model's two favourite classes are *Coat* and *Pullover*, which really do look alike at 28 × 28:
+
+![Logits to softmax to loss](figures/softmax_cross_entropy.png)
+
+| Step | Coat (correct) | Pullover | Shirt | all others |
+|---|---:|---:|---:|---:|
+| 1. logits (raw scores) | 4.15 | 3.57 | 0.37 | between −10.3 and −4.1 |
+| 2. softmax probabilities | **0.63** | 0.35 | 0.01 | ≈ 0.00 each |
+| 3. cross-entropy loss | −log(0.63) = **0.46** | | | |
+
+Notice how softmax **exaggerates gaps**: a logit difference of only 0.58 between Coat and Pullover becomes 0.63 vs 0.35, because softmax uses $e^z$ and $e^{0.58} \approx 1.8$. The prediction is correct (Coat), but the loss is still 0.46 because the model wasn't very sure.
+
+
 ### What `nn.Module` gives you
 
 Parameters such as a linear layer's weights and biases are registered automatically. For example, `nn.Linear(784, 128)` has a weight of shape `[128, 784]` and a bias of shape `[128]`. The model exposes these through `model.parameters()` for an optimizer and through `model.state_dict()` for persistence.
@@ -294,6 +331,11 @@ $$
 It is small when the correct class has high predicted probability and large when the model gives it very little probability. By default, `CrossEntropyLoss` averages the batch losses.
 
 If all ten logits are equal, softmax assigns probability `0.1` to every class, so the loss for any target is `-log(0.1) = log(10) ≈ 2.303`. A confident correct prediction pushes the loss toward zero; a confident wrong prediction makes it large.
+
+![Cross-entropy curve](figures/cross_entropy_curve.png)
+
+The whole loss is just this one curve applied to "the probability the model gave to the right answer". Push that probability toward 1 and the loss goes to 0. Give it almost nothing and the loss shoots up.
+
 
 ```python
 loss_fn = nn.CrossEntropyLoss()
@@ -318,6 +360,23 @@ $$
 $$
 
 where `η` is the learning rate. The optimizer packages this update rule and may keep extra state. Stochastic gradient descent (SGD) uses the current batch's gradient; Adam also tracks moving averages of gradients and squared gradients.
+
+![SGD vs Adam](figures/sgd_vs_adam.png)
+
+*Real computation: 40 steps of PyTorch's own `torch.optim.SGD` and `torch.optim.Adam` (both lr 0.3) on a loss that is steep in one direction and gentle in the other.*
+
+- **SGD** uses one step size for every weight. The steep direction makes it bounce side to side, while it creeps slowly along the gentle direction.
+- **Adam** keeps, for each weight, a running average of its gradients (**momentum**: keep moving in a consistent direction) and of their squares (a per-weight **scale**). Dividing by that scale gives every weight a similar-sized step, whether its gradients are big or small. It can overshoot, as here, but it adapts automatically, which is why `Adam(lr=1e-3)` works well out of the box for many models.
+
+
+
+```mermaid
+flowchart LR
+    Z["1. optimizer.zero_grad()<br/>clear old .grad"] --> F["2. logits = model(X)<br/>loss = loss_fn(logits, y)"]
+    F --> B["3. loss.backward()<br/>fill .grad"]
+    B --> S["4. optimizer.step()<br/>update weights"]
+    S -->|"next batch"| Z
+```
 
 In a training step, the essential order is:
 
@@ -482,6 +541,20 @@ state = torch.load(
 loaded_model.load_state_dict(state)
 loaded_model.eval()
 ```
+
+
+**What's actually inside the state dict** of the chapter's `MyNeuralNetwork` (real output of `{k: v.shape for k, v in model.state_dict().items()}`):
+
+| Key | Shape | What it is |
+|---|---|---|
+| `linear_relu_stack.0.weight` | `[128, 784]` | first Linear layer's weights |
+| `linear_relu_stack.0.bias` | `[128]` | first Linear layer's biases |
+| `linear_relu_stack.2.weight` | `[64, 128]` | second Linear layer (index 1 is the ReLU, which has no parameters) |
+| `linear_relu_stack.2.bias` | `[64]` | |
+| `linear_relu_stack.4.weight` | `[10, 64]` | output layer |
+| `linear_relu_stack.4.bias` | `[10]` | |
+
+The names come from the attribute names in your class (`linear_relu_stack`) plus the position inside `nn.Sequential`. That's why loading only works into a model built with the same structure and names.
 
 The model architecture must match the saved parameter names and shapes. For instance, a saved first layer with shape `[128, 784]` cannot be loaded into a layer with a different hidden width. `map_location` maps saved tensors to the requested device while loading. The `.pth` and `.pt` suffixes are common conventions, not format requirements.
 

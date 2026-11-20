@@ -159,6 +159,11 @@ Remember:
 
 **Axis = X or Y dimension of a graph**
 
+![Anatomy of a Matplotlib figure](figures/anatomy.png)
+
+*Every labelled part above is a separate object you control from code: the Figure (`fig`), the Axes (`ax`), and things you add to the Axes.*
+
+
 ---
 
 # 4. Creating a Figure and Axes
@@ -249,6 +254,11 @@ plt.show()
 
 Here, we explicitly work with the Figure and Axes objects.
 
+Both versions above draw exactly the same picture:
+
+![Basic plot](figures/basic_plot.png)
+
+
 ### Our convention
 
 For Deep Learning experiments, we will primarily use the object-oriented interface.
@@ -289,9 +299,9 @@ plt.show()
 
 Mathematically, the points being plotted are:
 
-\[
+$$
 (1,2.5), (2,1.8), (3,1.2), (4,0.8), (5,0.5)
-\]
+$$
 
 The X-coordinate represents the epoch.
 
@@ -323,6 +333,11 @@ ax.grid(True)
 plt.show()
 ```
 
+
+The customized version looks like this:
+
+![Customized plot](figures/custom_plot.png)
+
 ### Important arguments
 
 | Argument | Purpose |
@@ -353,6 +368,9 @@ plt.show()
 | `"--"` | Dashed |
 | `"-."` | Dash-dot |
 | `":"` | Dotted |
+
+![Markers and line styles](figures/markers_linestyles.png)
+
 
 ---
 
@@ -483,6 +501,11 @@ axes[1, 0]
 axes[1, 1]
 ```
 
+
+![Subplot layouts](figures/subplots_layouts.png)
+
+*What each layout creates, and how to reach each Axes.* `plt.subplots(1, 2)` and `plt.subplots(2, 1)` return a 1D array (`axes[0]`), while `plt.subplots(2, 2)` returns a 2D array (`axes[0, 1]`). Tip: `for ax in axes.flat:` loops over every Axes, whatever the layout.
+
 ### Important Python connection
 
 The returned `axes` object is an array-like collection of Axes objects.
@@ -500,6 +523,11 @@ plt.tight_layout()
 ```
 
 This automatically adjusts subplot spacing to reduce overlaps.
+
+![tight_layout before and after](figures/tight_layout_compare.png)
+
+*Real output: the same 2 × 2 figure without and with `tight_layout()`.* (`fig.tight_layout()` and `plt.tight_layout()` do the same job; the `fig.` version is the object-oriented style this chapter prefers.)
+
 
 ---
 
@@ -520,23 +548,23 @@ Visualizing these metrics helps us understand how our model behaves during train
 
 Training loss measures the error produced by the model on the training dataset.
 
-For a dataset containing \(N\) samples:
+For a dataset containing $N$ samples:
 
-\[
+$$
 L_{train} =
 \frac{1}{N}
 \sum_{i=1}^{N}
 \ell(f_\theta(x_i), y_i)
-\]
+$$
 
 Where:
 
-- \(N\) is the number of training samples.
-- \(f_\theta\) represents the model.
-- \(\theta\) represents model parameters.
-- \(x_i\) is an input sample.
-- \(y_i\) is its target.
-- \(\ell\) is the loss function.
+- $N$ is the number of training samples.
+- $f_\theta$ represents the model.
+- $\theta$ represents model parameters.
+- $x_i$ is an input sample.
+- $y_i$ is its target.
+- $\ell$ is the loss function.
 
 During training, model parameters are updated to reduce the training objective.
 
@@ -544,14 +572,14 @@ During training, model parameters are updated to reduce the training objective.
 
 Validation loss measures the model's error on a separate dataset that is not used for parameter updates.
 
-\[
+$$
 L_{val} =
 \frac{1}{M}
 \sum_{i=1}^{M}
 \ell(f_\theta(x_i), y_i)
-\]
+$$
 
-Where \(M\) is the number of validation samples.
+Where $M$ is the number of validation samples.
 
 The distinction:
 
@@ -633,6 +661,11 @@ Observe the behavior:
 4. Validation loss starts increasing afterward.
 
 This is a common indication of overfitting.
+
+![Overfitting, annotated](figures/overfitting_annotated.png)
+
+*The table above, plotted.* The moment the two curves start to **separate** (validation going up while training keeps going down) is the moment the model starts memorizing instead of learning.
+
 
 ## What is overfitting?
 
@@ -716,9 +749,19 @@ It controls the resolution of the saved image.
 
 Higher DPI generally produces a sharper image and a larger file.
 
+![dpi comparison](figures/dpi_compare.png)
+
+*Real output: the same small figure saved at two dpi values, zoomed in.* Since dpi is "dots per inch", a `figsize=(8, 5)` figure at `dpi=150` becomes 8·150 × 5·150 = **1200 × 750 pixels**.
+
+
 ### `bbox_inches="tight"`
 
 Reduces unnecessary whitespace around the saved visualization.
+
+![bbox_inches comparison](figures/bbox_compare.png)
+
+*Real output.* `bbox_inches="tight"` measures where your content actually is and fits the saved image to it, plus a small padding. It also rescues labels that would otherwise be cut off at the edge.
+
 
 ### Supported formats
 
@@ -933,6 +976,38 @@ From these hypothetical curves:
 - Validation accuracy peaks at epoch 5 and declines afterward.
 
 Together, these observations suggest that the model may be overfitting after epoch 5.
+
+This is the figure your run of this exact code saved (`outputs/complete_training_report.png`, copied into `figures/` so it's tracked):
+
+![Complete training report](figures/complete_training_report.png)
+
+
+---
+
+
+## 14.1 Bonus: other plot types used in this repository
+
+Line plots are not the only tool. These show up in later chapters (decision boundaries, weight histograms, feature maps, benchmarks):
+
+![Gallery of plot types](figures/plot_gallery.png)
+
+```python
+fig, axes = plt.subplots(2, 3, figsize=(13, 7))
+
+axes[0, 0].scatter(x, y, c=labels)            # points, colored by class (Ch. 02 two-moons)
+axes[0, 1].hist(values, bins=40)              # distribution of numbers (weights, activations)
+im = axes[0, 2].imshow(img, cmap="gray")      # images, feature maps, matrices (Ch. 06)
+fig.colorbar(im, ax=axes[0, 2])               # the color scale for imshow
+axes[1, 0].bar(["CPU", "MPS"], [14.5, 26.6])  # a few numbers side by side (Ch. 04 benchmark)
+axes[1, 1].plot(steps, loss)
+axes[1, 1].set_yscale("log")                  # losses that span 2.3 → 0.0001
+axes[1, 2].plot(x, mean)
+axes[1, 2].fill_between(x, mean - std, mean + std, alpha=0.2)  # mean ± spread over seeds
+
+fig.tight_layout()
+```
+
+**When to use a log scale:** whenever the values you care about span several powers of ten (like a loss going from 2.3 to 0.0001). On a normal axis everything after the first few epochs looks flat; on a log axis you can still see whether it's improving.
 
 ---
 

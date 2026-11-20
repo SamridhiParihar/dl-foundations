@@ -17,6 +17,21 @@ This chapter builds on the Autograd concepts in [Chapter 03 · micrograd](../03-
 
 A batch of images is transformed and loaded by a DataLoader. The model maps each image to ten class scores, or logits. Cross-entropy compares those scores with the integer labels. During training, Autograd computes gradients and Adam updates the model parameters. Validation and test evaluation run without gradient tracking. Checkpoints store the learned parameter values so a new model instance can restore them.
 
+```mermaid
+flowchart LR
+    D["FashionMNIST<br/>Dataset"] --> L["DataLoader<br/>batches of 64"]
+    L -->|"X [64,1,28,28]"| M["MLP<br/>(model.py)"]
+    M -->|"logits [64,10]"| C["CrossEntropyLoss"]
+    L -->|"y [64]"| C
+    C -->|"loss.backward()"| G["gradients<br/>in .grad"]
+    G -->|"optimizer.step()"| M
+    M -.->|"model.eval() + no_grad"| E["validation / test<br/>loss + accuracy"]
+    M -.->|"state_dict()"| K["checkpoint .pth"]
+```
+
+Solid arrows run on **every training batch**; dotted arrows run **after training** (or once per epoch for validation).
+
+
 ## Completed phases
 
 ### Phase 1 — Prepare FashionMNIST
@@ -28,6 +43,13 @@ Implemented in [dataset.py](dataset.py).
 - The 60,000 training examples are split into 54,000 training and 6,000 validation examples with a fixed random-split seed of 42.
 - ToTensor converts each 28 × 28 grayscale image to a floating-point tensor. Normalize with mean 0.5 and standard deviation 0.5 maps the usual pixel range from approximately [0, 1] to [-1, 1].
 - A batch contains up to 64 images with shape [64, 1, 28, 28] and integer class labels.
+
+![FashionMNIST samples](figures/fashion_mnist_samples.png)
+
+![Data split](figures/data_split.svg)
+
+![From one example to a batch](figures/batch_shapes.svg)
+
 - Training batches are shuffled. Validation and test batches are not. The training DataLoader uses a seeded generator for repeatable ordering.
 
 **Why this matters:** training examples are used to update weights, validation examples help compare training choices, and the test set is kept for a final evaluation. The code uses the test set separately from the training and validation loaders.
@@ -46,6 +68,20 @@ The model flattens each image and applies these layers:
 | Linear output | 64 → 10 logits |
 
 The final layer returns raw logits; it does not apply softmax. CrossEntropyLoss consumes logits directly and combines the softmax calculation with the classification loss. The architecture has 109,386 trainable parameters, calculated from the layer dimensions and biases.
+
+![MLP architecture](figures/mlp_architecture.svg)
+
+**Where 109,386 comes from:** a `Linear(in, out)` layer has `in × out` weights plus `out` biases.
+
+| Layer | Weights | Biases | Total |
+|---|---:|---:|---:|
+| `Linear(784, 128)` | 100,352 | 128 | 100,480 |
+| `Linear(128, 64)` | 8,192 | 64 | 8,256 |
+| `Linear(64, 10)` | 640 | 10 | 650 |
+| **All** | | | **109,386** |
+
+You can check it in code: `sum(p.numel() for p in model.parameters())`.
+
 
 ### Phase 3 — Train one epoch at a time
 
@@ -81,6 +117,27 @@ The training script plots training loss and validation loss across epochs. Keepi
 
 No specific training or validation loss values are recorded in the available run notes, so this document does not invent them.
 
+**Update: your run's plot is in `outputs/train_val_loss.png`.** That folder is git-ignored, so a copy now lives in `figures/`:
+
+![Your training vs validation loss](figures/train_val_loss.png)
+
+*Your saved figure.* Reading it: training loss falls steadily from about 0.52 to 0.30. Validation loss falls from about 0.41 to a minimum of about 0.33 at **epoch 4**, then rises slightly at epoch 5. That small uptick, while training loss keeps falling, is the first hint of overfitting. With more epochs you'd watch whether the gap keeps growing (see [Chapter 05 §10](../05-matplotlib/README.md)).
+
+**Reproduction (to fill in the missing numbers).** We re-ran the same pipeline (same split seed 42, same MLP, Adam, lr 0.001, batch 64, 5 epochs, torch seed 42) on a Linux CPU:
+
+![Reproduction curves](figures/repro_curves.png)
+
+| Epoch | Train loss | Val loss | Val accuracy |
+|---:|---:|---:|---:|
+| 1 | 0.517 | 0.420 | 84.8% |
+| 2 | 0.381 | 0.378 | 86.5% |
+| 3 | 0.342 | 0.346 | 87.6% |
+| 4 | 0.317 | 0.341 | 87.6% |
+| 5 | 0.298 | 0.347 | 87.4% |
+
+It matches your plot closely, including the validation minimum at epoch 4. **Test set (10,000 images): loss 0.365, accuracy 87.2%.** These are reproduction numbers; your own runs may differ slightly (different hardware, and `training.py` doesn't seed the model's initial weights).
+
+
 ### Phase 6 — Compare learning rates
 
 Implemented in [learning_rate_experiments.py](learning_rate_experiments.py), with curves created by [plotting.py](plotting.py).
@@ -88,6 +145,21 @@ Implemented in [learning_rate_experiments.py](learning_rate_experiments.py), wit
 The experiment compares learning rates 0.1, 0.01, and 0.001 for five epochs each. Each trial creates a fresh model and optimizer. The code resets the model seed and training-loader generator to 42 before each trial so the runs start with the same initialization and batch order.
 
 **Expected behavior, not a recorded result:** a larger learning rate makes larger parameter updates. It may reduce loss quickly, but can also make training unstable; a smaller rate often changes weights more cautiously and may need more epochs. The actual per-epoch values and plotted curves are not preserved in the available run notes, so no winner is claimed here.
+
+**Update: your run's plot is in `outputs/lr_comparison.png`** (copied to `figures/`):
+
+![Your learning-rate comparison](figures/lr_comparison.png)
+
+*Your saved figure.* What it shows:
+
+| Learning rate | What happened | Why |
+|---|---|---|
+| **0.1** | train and validation loss stuck at about **2.30** from epoch 2 on | 2.30 = ln(10), exactly the loss of guessing uniformly among 10 classes. The steps were so big that the network was knocked into a state where it outputs the same scores for every image (most likely because most ReLU units "died", see Chapter 06 Part 2 §4.3), and it never recovered. |
+| **0.01** | learns, ends around 0.45 | works, but noisier and worse than 0.001 |
+| **0.001** | learns best, ends around 0.30 | the winner for this model and 5 epochs |
+
+**Takeaway:** a too-large learning rate doesn't just learn "faster and rougher"; it can break training completely. A loss stuck at ln(number of classes) is the tell-tale sign.
+
 
 ### Phase 7 — Save, reload, and verify a checkpoint
 
@@ -102,6 +174,9 @@ The verification script trains a model, records logits for a test batch, saves t
 Implemented in [test_evaluation.py](test_evaluation.py), using the held-out test loader from [dataset.py](dataset.py).
 
 This step loads a checkpoint and reports test loss and accuracy. Test data is for a final performance estimate, not for selecting the learning rate or tuning the model. The exact test loss and accuracy from the user's run are not present in the available conversation or project notes, so they are left unreported rather than guessed.
+
+For reference, the reproduction described in Phase 5 reached **87.2% test accuracy (test loss 0.365)** after 5 epochs. Expect your checkpoint to land close to that.
+
 
 ### Phase 9 — Benchmark CPU vs MPS
 
@@ -132,6 +207,13 @@ A speedup below 1.0x means MPS took longer. In this run, CPU completed the five 
 
 **Interpretation:** MPS was slower for this small FashionMNIST MLP workload. This is a measured result for this machine and configuration, not a general claim that MPS is slower than CPU. A likely explanation is that this small model and batch size do not provide enough computation to offset GPU dispatch and data-transfer overhead. The benchmark did not separately measure those overheads, so that explanation is an inference.
 
+![CPU vs MPS benchmark](figures/benchmark_cpu_mps.png)
+
+*Your measured numbers from the table above, as a chart.*
+
+**Why can a GPU be slower here?** Each batch is tiny work for a GPU: a 64 × 784 by 784 × 128 matrix multiply, finished in microseconds. But each step still pays fixed costs: launching GPU kernels, copying the batch from CPU to GPU memory, and synchronizing. When the work per step is small, those fixed costs dominate. GPUs win when each step has a lot of math, such as bigger batches, bigger layers, or convolutions on larger images. Try `batch_size=1024` or a CNN and compare again.
+
+
 ## What is measured and what is expected
 
 | Type | Recorded information |
@@ -143,6 +225,20 @@ A speedup below 1.0x means MPS took longer. In this run, CPU completed the five 
 The implementation produces training, validation, test, and checkpoint-verification metrics when run, but those numeric outputs are not present in the retained run notes. The benchmark table above is the only set of model-run measurements reproduced here.
 
 ## Reproduce the project scripts
+
+
+> **Note (folder renamed):** this chapter now lives in `first_pytorch_training/` (renamed from `04-first-pytorch-training/` so it can be imported as a Python package by later chapters). The repository root is installed as an editable package through `pyproject.toml` and `pixi.toml`, and data/checkpoint paths are now built from `__file__`, so the scripts work from **any** folder. Use these commands:
+>
+> ```bash
+> pixi run python -m first_pytorch_training.dataset
+> pixi run python -m first_pytorch_training.training        # or: pixi run mlp-train
+> pixi run python -m first_pytorch_training.learning_rate_experiments
+> pixi run python -m first_pytorch_training.verify_checkpoint
+> pixi run python -m first_pytorch_training.test_evaluation
+> pixi run python -m first_pytorch_training.benchmark
+> ```
+>
+> The original commands below are kept for history; they used the old folder name.
 
 Run commands from the repository root so the data directory and checkpoint paths resolve as intended. FashionMNIST is downloaded on the first run if it is not already present.
 

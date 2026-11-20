@@ -45,6 +45,11 @@ The usual properties are:
 
 A shape is not just bookkeeping. It is a compact statement of what data means. For a batch `X` with 4 examples and 3 input features, use shape `(4, 3)`. For 2D points from 10 time steps, shape `(10, 2)` could mean time by coordinate. Write down the axis meanings when a shape might be ambiguous.
 
+![Scalars, vectors, matrices and tensors](figures/tensor_ranks.svg)
+
+**In plain words:** `ndim` counts how many index numbers you need to point at one element. A scalar needs none, a vector needs one (`v[2]`), a matrix needs two (`m[1, 2]`), and a batch of images needs four (`x[image, channel, row, column]`). The shape tells you how far each index can go.
+
+
 ## 2. Dtypes and numerical precision
 
 NumPy arrays have a single dtype. The dtype affects memory use, representable range, rounding, and compatibility with later operations. Python floats commonly become NumPy `float64` by default, while deep learning models commonly use `float32` unless there is a reason to choose another precision.
@@ -66,6 +71,29 @@ np.allclose(actual, expected, rtol=1e-5, atol=1e-7)
 
 Use integer dtypes for counts and indices, Boolean dtype for conditions, and an explicit floating dtype for numerical model inputs. Be deliberate about mixing dtypes: NumPy may promote values to a wider type, which can change memory use and results.
 
+### Quick reference: common dtypes
+
+| dtype | Bytes per number | Roughly how many exact decimal digits | Largest value | Typical use |
+|---|---:|---:|---|---|
+| `float16` | 2 | ~3 | 65,504 | memory-saving training on GPUs |
+| `float32` | 4 | ~7 | ~3.4 × 10³⁸ | **default for deep learning** |
+| `float64` | 8 | ~15–16 | ~1.8 × 10³⁰⁸ | NumPy's default, scientific computing |
+| `int32` | 4 | exact | ~2.1 billion | indices, counts |
+| `int64` | 8 | exact | ~9.2 × 10¹⁸ | NumPy/PyTorch default integers, class labels |
+| `bool` | 1 | – | – | masks (`True` / `False`) |
+
+**Why "use a tolerance" matters**, in one example:
+
+```python
+0.1 + 0.2 == 0.3                       # False!
+0.1 + 0.2                              # 0.30000000000000004
+np.isclose(0.1 + 0.2, 0.3)             # True
+f"{np.float32(0.1):.20f}"              # '0.10000000149011611938' — float32 can't store 0.1 exactly
+```
+
+Computers store numbers in binary, and many simple decimals (like 0.1) have no exact binary form, just as 1/3 has no exact decimal form (0.333…). So tiny rounding errors are normal. Compare floats with `np.allclose` / `np.isclose`, never with `==`.
+
+
 ## 3. Indexing, slicing, and reshape
 
 Indexing selects elements; slicing selects ranges along axes. NumPy uses zero-based indices, and slice endpoints stop before the end index.
@@ -82,6 +110,9 @@ x[:, 1]      # second column, shape (3,)
 x[0:2, 1:4]  # rows 0–1 and columns 1–3
 ```
 
+
+![Indexing and slicing](figures/indexing.svg)
+
 A colon means “take this axis”; `:` by itself selects the whole axis. A slice often produces a view that shares memory with the original array, so changing the slice may change the source. Advanced indexing, such as selecting with a list of integer indices, generally creates a copy.
 
 `reshape` changes how elements are arranged into axes without changing their order or count. The new dimensions must multiply to the same total size. One dimension may be `-1` to ask NumPy to infer it:
@@ -93,6 +124,11 @@ columns = flat.reshape(-1, 1)  # shape (12, 1), a column vector
 ```
 
 `reshape` returns a view when possible and a copy when the current memory layout makes a view impossible. Do not rely on it always sharing memory or always copying; check with `np.shares_memory(a, b)` when that distinction matters.
+
+![reshape](figures/reshape.svg)
+
+**Mental model:** imagine the 12 numbers written on a long strip of paper. `reshape` only decides where to cut the strip into rows. It never reorders the numbers.
+
 
 ## 4. Views, copies, and mutation
 
@@ -112,6 +148,19 @@ print(np.shares_memory(base, copy))  # False
 
 Use `.copy()` when you need an independent array before in-place modification. Use a view when shared storage is intentional and you understand the consequences. A view can keep a much larger source allocation alive, even if the view is small.
 
+![View vs copy](figures/view_vs_copy.svg)
+
+**Rule of thumb:**
+
+| Operation | Usually gives | So changing it… |
+|---|---|---|
+| basic slice `a[1:4]`, `a[:, 0]` | a **view** | …also changes `a` |
+| `a.reshape(...)`, `a.T` | a view when possible | …may change `a` (check with `np.shares_memory`) |
+| `a.copy()` | a **copy** | …never changes `a` |
+| fancy indexing `a[[0, 2]]`, mask `a[a > 0]` | a **copy** | …never changes `a` |
+| arithmetic `a + 1`, `a * 2` | a **new** array | …never changes `a` |
+
+
 ## 5. Boolean masks
 
 A Boolean mask is an array of `True` and `False` values, often made by comparing an array with a threshold. It can filter values or select rows.
@@ -122,6 +171,9 @@ valid = readings >= 0
 positive = readings[valid]
 readings[readings > 2.0] = 2.0  # assign through a mask
 ```
+
+
+![Boolean mask](figures/boolean_mask.svg)
 
 For a 2D array, a row mask must have one Boolean value per row:
 
@@ -160,6 +212,24 @@ matrix + column                   # result shape (2, 3)
 The singleton axis is expanded conceptually; NumPy does not need to materialize repeated copies just to perform the operation. Broadcasting is useful for normalizing features, adding per-feature biases, and applying coordinate-wise offsets.
 
 A reliable check is to write down both input shapes and the output shape before running the code. For example, `(4, 3)` plus `(3,)` is compatible: compare `(4, 3)` with `(1, 3)`, giving `(4, 3)`. But `(4, 3)` plus `(4,)` is incompatible: compare `(4, 3)` with `(1, 4)` and the trailing dimensions `3` and `4` do not match.
+
+![Broadcasting](figures/broadcasting.svg)
+
+### Broadcasting in three steps (do this on paper)
+
+1. **Write the shapes right-aligned**, one above the other. Pad the shorter one on the left with 1s.
+2. **Check each column from the right:** the two sizes must be equal, or one of them must be 1.
+3. **The result size in each column** is the bigger of the two.
+
+```text
+   (4, 3)        (4, 3)        (2, 1, 5)
+ + (1, 3)      + (1, 4)      + (   3, 1)   →  pad: (1, 3, 1)
+   ------        ------        ---------
+   (4, 3) ✓      3 vs 4 ✗      (2, 3, 5) ✓
+```
+
+The "stretching" is only conceptual: NumPy reuses the same memory instead of making copies, which is why broadcasting is both convenient and fast.
+
 
 **Pause and predict:** The exercise file asks you to predict six broadcasting results before executing any of them. Record whether each operation succeeds and its resulting shape, then check your reasoning in Python.
 
@@ -209,6 +279,13 @@ print(f"vectorized:{median_ms(lambda x: x * x, values):.2f} ms")
 
 The loop is expected to be slower for this simple elementwise operation, but exact ratios depend on array size, hardware, NumPy build, and other running work. Always verify results with `np.allclose` (or an appropriate exact comparison) so a fast implementation is still correct.
 
+![Loop vs vectorized timing](figures/vectorization_timing.png)
+
+*Real measurement (Linux cloud CPU, NumPy, float32, median of repeats). Your Mac's numbers will differ, but the shape of the result is the same.* For 100,000 elements the loop took about 18 ms and the vectorized version about 0.01 ms, over 1,000× faster.
+
+**Why is vectorized code so much faster?** In the loop, Python does a lot of work for *every* element: look up `x[i]`, create a Python number object, multiply, convert it back, store it. With `x * x`, Python makes **one** call, and NumPy then runs a tight loop in compiled C code over raw memory, often using CPU instructions that process several numbers at once. The math is identical; only the per-element overhead disappears.
+
+
 Vectorization is not automatically better for every task: tiny arrays can be dominated by setup costs, and some algorithms are naturally iterative. The goal is to express the numerical work in array operations when that is clear and correct.
 
 ## 8. Linear algebra and `@`
@@ -223,6 +300,11 @@ print(C.shape)  # (2, 4)
 ```
 
 The entry at row `i`, column `j` is the dot product of row `i` of `A` and column `j` of `B`. For vectors, `@` computes a dot product; for batches and higher-dimensional arrays, NumPy follows its batched matrix multiplication rules. In this chapter, reason first with 2D shapes.
+
+![Matrix multiplication vs element-wise](figures/matmul.svg)
+
+**Shape rule to memorize:** `(m, n) @ (n, p) → (m, p)`. The two inner numbers must match and "cancel out"; the outer numbers become the result's shape.
+
 
 ## 9. A dense layer for a batch of four
 
@@ -247,6 +329,13 @@ b = np.array([0.05, -0.02], dtype=np.float32)        # (2,)
 Y = X @ W + b
 print(Y.shape)  # (4, 2)
 ```
+
+
+![Dense layer on a batch of four](figures/dense_layer.svg)
+
+*These are the real outputs of the code above:* `Y = [[-0.75, 1.48], [-0.05, 1.08], [0.85, 0.08], [0.15, 0.98]]`.
+
+Read it row by row: each row of `Y` is one example's two output features. Every example uses the **same** `W` and `b`, which is exactly what makes a layer "learned once, applied to everything".
 
 This same pattern appears in neural networks: matrix multiplication combines input features with weights, and broadcasting adds the bias. In robotics, the same shape reasoning helps with batches of states, coordinate transforms, sensor features, and trajectory data. The meaning of each axis depends on the problem, so label the axes before choosing an operation.
 
@@ -334,6 +423,15 @@ tensor[1] = 20.0 # array sees this change
 
 Because the storage is shared, either object's in-place edits are visible through the other. The tensor cannot resize that NumPy allocation. `torch.from_numpy` accepts CPU arrays with supported NumPy dtypes; it does not move an array to CUDA or MPS. Do not write through the tensor when the source NumPy array is read-only. Use `torch.tensor(array)` or `array.copy()` first when independent storage is required.
 
+```mermaid
+flowchart LR
+    A["NumPy array<br/>(CPU memory)"] -- "torch.from_numpy(a)<br/><b>shares</b> memory" --> T["CPU tensor"]
+    T -- "t.numpy()<br/><b>shares</b> memory<br/>(CPU, no grad only)" --> A
+    A -- "torch.tensor(a)<br/><b>copies</b>" --> T2["new CPU tensor"]
+    G["MPS / CUDA tensor<br/>or requires_grad"] -- "t.detach().cpu().numpy().copy()<br/><b>independent</b> copy" --> A2["new NumPy array"]
+```
+
+
 In the other direction, `tensor.numpy()` is available when the tensor is on the CPU, does not require gradients, and has a dtype and layout supported by NumPy. In that case, the returned array shares the tensor's storage, so mutations are visible in both directions. A CUDA or MPS tensor cannot directly expose its device memory as a NumPy array, and a tensor requiring gradients must be detached from autograd first:
 
 ```python
@@ -373,6 +471,19 @@ Before moving on, make sure you can explain:
 - Why `*` and `@` represent different operations.
 - How a bias of shape `(2,)` becomes compatible with a layer output of shape `(4, 2)`.
 - What PyTorch adds for training that a NumPy array does not provide.
+
+
+<details>
+<summary><b>Short answers (open after you've tried)</b></summary>
+
+- **Axis meaning:** a sample batch `(N, F)` is examples × features. A robotics log `(T, 3)` could be time steps × (x, y, z). The numbers alone don't tell you; you name the axes.
+- **View vs `.copy()`:** a view shares the same memory buffer, so writing through it writes into the source. Call `.copy()` before modifying a slice that you don't want to affect the original.
+- **Broadcasting:** right-align the shapes; each pair of sizes must be equal or contain a 1 (missing axes count as 1).
+- **`*` vs `@`:** `*` multiplies matching positions (shapes must be equal or broadcastable); `@` takes dot products of rows with columns (the inner sizes must match).
+- **Bias `(2,)` with output `(4, 2)`:** right-aligned, `(2,)` becomes `(1, 2)`; the 2s match and the 1 stretches to 4 rows, so every example gets the same two biases.
+- **What PyTorch adds:** devices (CPU, CUDA, MPS) and autograd (recording operations to compute gradients automatically). Shapes, dtypes and broadcasting work the same.
+
+</details>
 
 Then complete [`exercises/numpy_exercises.py`](exercises/numpy_exercises.py). It contains prompts and answer spaces only; write and run your own code as you work through them.
 

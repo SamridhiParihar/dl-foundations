@@ -90,6 +90,11 @@ $$
 
 For `a = (3, 4)` and `c = (6, 8)`, `a · c = 50`, while their magnitudes are `5` and `10`. Their cosine similarity is `50 / (5 × 10) = 1`: they point in the same direction, although one is twice as long. For nonzero vectors the score is between `−1` and `1`; it is undefined if either vector is zero. This is useful when comparing the direction of feature or embedding vectors independently of their magnitude.
 
+![Dot product, angle and projection](figures/vectors_dot_projection.svg)
+
+**How to picture it:** the dot product asks "how much do these two arrows point the same way?", scaled by their lengths. Shine a light straight down onto `b`: the shadow of `a` is its projection, here 3 units long. For a neuron, `w · x` is large when the input `x` points in the direction the weights `w` "like", which is why a neuron is a pattern detector.
+
+
 ### A neuron is a dot product plus a bias
 
 A neuron first computes a weighted sum, then can pass it through an activation function:
@@ -144,6 +149,34 @@ z.backward()  # PyTorch records the operations and computes gradients
 
 NumPy and PyTorch operate on whole arrays or tensors; this chapter's engine builds the same weighted sum from scalar operations. For a batch and a whole layer, the corresponding expression is a matrix multiplication plus a bias, as developed in [Chapter 02](../02-backprop-by-hand/README.md).
 
+The same neuron, drawn the way micrograd sees it: every `*`, `+` and `tanh` becomes a node, and backpropagation fills in each node's `grad`. These are the real values from the neuron example in `micrograd.py` (inputs `x1 = 2, x2 = 0`, weights `w1 = −3, w2 = 1`, bias `b = 6.8814`):
+
+![Neuron computation graph](figures/neuron_graph.svg)
+
+
+
+### What a derivative is (the first experiment in `micrograd.py`)
+
+Before any classes, the script asks a simple question: **if I nudge the input by a tiny amount `h`, how much does the output move?**
+
+$$
+f'(x) \approx \frac{f(x+h) - f(x)}{h} \qquad \text{for a very small } h.
+$$
+
+For `f(x) = 3x² − 4x + 5` at `x = 3`, the script gets about **14**. Calculus gives the exact answer: `f′(x) = 6x − 4`, so `f′(3) = 14`. The derivative is the **slope** of the curve at that point, how steep it is there:
+
+![Derivative as a slope](figures/derivative_slope.png)
+
+The script then does the same with **several inputs**: `d = a·b + c` with `a = 3, b = −2, c = 11`. Nudging one input at a time while holding the others fixed gives the **partial derivatives**:
+
+| Nudge | `d` changes by about | So the partial derivative is |
+|---|---|---|
+| `c` by `h` | `1 · h` | ∂d/∂c = 1 |
+| `a` by `h` | `b · h = −2h` | ∂d/∂a = b = −2 |
+| `b` by `h` | `a · h = 3h` | ∂d/∂b = a = 3 |
+
+Each partial derivative answers "if I wiggle only this input, how hard does the output react, and in which direction?" A **gradient** is the list of all of them. Backpropagation is just a fast, exact way to get every one at once, instead of nudging inputs one at a time.
+
 ### Local derivatives
 
 For an operation with output `out` and parent `a`, the operation supplies a local derivative. During backpropagation, the contribution from this edge is the gradient already received by `out` multiplied by that local derivative:
@@ -166,6 +199,11 @@ $$
 
 Here `p` is a constant numeric exponent, as required by the current `Value.__pow__` implementation.
 
+![tanh and its derivative](figures/tanh_derivative.png)
+
+Notice the `tanh` slope is largest (1) at 0 and almost 0 for large |a|. That's why saturated tanh neurons learn slowly: very little gradient passes through them.
+
+
 #### Why each rule has that form
 
 - **Addition:** if `out = a + b`, changing `a` by a small amount changes `out` by the same amount; the same is true for `b`. Thus both local slopes are `1`.
@@ -173,6 +211,22 @@ Here `p` is a constant numeric exponent, as required by the current `Value.__pow
 - **Power:** for `out = a^p` with fixed `p`, the power rule gives `p × a^(p−1)`.
 - **Exponential:** the derivative of `e^a` is `e^a`, which is already the output `out`.
 - **Tanh:** `d(tanh(a))/da = sech²(a)`. Since `sech²(a) = 1 − tanh²(a)`, the derivative can be calculated from the saved output as `1 − out²`.
+
+### A complete worked example: L = (a·b + c)·f
+
+This is the example from `micrograd.py`, with `a = 2, b = −3, c = 10, f = −2`. The forward pass computes `e = a·b = −6`, `d = e + c = 4`, `L = d·f = −8`. Backpropagation starts at the end with `L.grad = 1` and applies the local rules one step at a time:
+
+![Worked computation graph](figures/graph_L_example.svg)
+
+| Step | Node | Rule used | Gradient |
+|---:|---|---|---|
+| 1 | `L` | start: ∂L/∂L | 1 |
+| 2 | `d`, `f` | `L = d × f` → each side gets the *other* side's data | `d.grad = f = −2`, `f.grad = d = 4` |
+| 3 | `e`, `c` | `d = e + c` → `+` copies the gradient | `e.grad = c.grad = −2` |
+| 4 | `a`, `b` | `e = a × b` → other side's data × incoming grad | `a.grad = b · (−2) = 6`, `b.grad = a · (−2) = −4` |
+
+**Sanity check with a nudge:** `a.grad = 6` predicts that increasing `a` by 0.0001 raises `L` by about 0.0006. The `lol()` function in the script does exactly this numerical check.
+
 
 ### Why gradients accumulate
 
@@ -182,6 +236,9 @@ $$
 \frac{\partial y}{\partial x}
 = 1 + 1 = 2.
 $$
+
+
+![Gradient accumulation](figures/grad_accumulation.svg)
 
 The same rule applies when a value feeds separate operations. If a backward closure assigned `x.grad = contribution`, a later path would erase the earlier contribution. It must add instead:
 
@@ -226,11 +283,17 @@ Then the graph traversal would call `node.backwardCommand.run()`. The Python clo
 
 `backward()` first walks from the result to its parents and builds a topological ordering. A `visited` set ensures each distinct `Value` enters that ordering once, even if the graph branches and later rejoins. The result's gradient is seeded to `1.0`, because `∂L/∂L = 1`, and the ordering is traversed in reverse. Each node's `_backward()` then sends its contribution to earlier values.
 
+**Topological order in plain words:** list the nodes so that every node appears *after* all the nodes it was computed from, like ordering the steps of a recipe so you never use an ingredient before it's prepared. `build_topo` gets this order with a depth-first search: it visits all of a node's parents first, then appends the node. Walking that list **backwards** guarantees that when a node's `_backward()` runs, its own `grad` is already complete, because every node that uses it came later in the list and has already sent its contribution. The black numbers in the worked-example figure above show one valid order.
+
+
 The graph walk visits a shared node once; gradient accumulation still accounts for every incoming edge. These solve different problems: `visited` prevents redundant traversal, while `+=` preserves all derivative contributions.
 
 ### From scalars to a small neural network
 
 `Neuron` combines weighted inputs and a bias, then applies `tanh`. `Layer` groups neurons, and `MLP` connects layers. Because their arithmetic uses `Value` operations, the same graph builder and `backward()` method calculate gradients for the network parameters. The script also includes manual examples, a graph renderer, and a PyTorch comparison.
+
+![The MLP 3 → 4 → 4 → 1](figures/mlp_3_4_4_1.svg)
+
 
 Run the chapter script from the repository root with:
 
@@ -242,7 +305,28 @@ pixi run python 03-micrograd/micrograd/micrograd.py
 
 The script builds a four-example toy dataset, creates an MLP with architecture `3 → 4 → 4 → 1`, computes a sum of squared errors, and performs 100 gradient-descent updates at learning rate `0.01`. It prints predictions after the updates. The MLP parameters use Python's random initialization without a fixed seed, so the printed predictions can differ between runs.
 
+**A real run of the chapter's training loop** (same data, same MLP and loss, 100 steps at learning rate 0.01; Python's `random` seeded with 7 so the picture is repeatable):
+
+![micrograd MLP training](figures/mlp_training.png)
+
+| | Example 0 | Example 1 | Example 2 | Example 3 | Loss (sum of squared errors) |
+|---|---:|---:|---:|---:|---:|
+| target | 1.0 | −1.0 | −1.0 | 1.0 | – |
+| before training | −0.30 | −0.11 | −0.22 | −0.24 | 4.63 |
+| after 100 steps | 0.89 | −0.91 | −0.88 | 0.89 | 0.05 |
+
+The tiny 41-parameter network learns to output close to ±1 for these four examples, using nothing but `Value` objects, the chain rule and `p.data += -0.01 * p.grad`. (Your own run will show different numbers, because the script doesn't seed `random`.)
+
+
 The included [`micrograd/value_graph.svg`](micrograd/value_graph.svg) is a rendered computation graph. Graph nodes show a value's label, data, and gradient; operation nodes make the arithmetic between values visible.
+
+<details>
+<summary><b>Show the rendered graph (large)</b></summary>
+
+![Full rendered computation graph](micrograd/value_graph.svg)
+
+</details>
+
 
 ## Mistakes I made
 
@@ -252,6 +336,9 @@ The included [`micrograd/value_graph.svg`](micrograd/value_graph.svg) is a rende
 - **Reusing stale gradients between backward passes.** The training loop builds a fresh graph and clears persistent parameter gradients before each pass. If reusing the same graph, clear all its node gradients; keep the within-graph `+=` behavior.
 - **Treating the exponent as another differentiable `Value`.** This implementation supports only integer or floating-point scalar powers, not a variable exponent.
 - **Differentiating `tanh` as if its input were the output.** The closure uses the saved output: `1 - out.data * out.data`.
+
+- **(Spotted while adding these notes)** In the "single step optimization" part of `micrograd.py`, the lines `b.grad += 0.01*b.grad`, `c.grad += …` and `d.grad += …` update the *gradients* instead of the *data*. Only `a.data` is actually nudged. To nudge all inputs, they should read `b.data += 0.01 * b.grad`, and so on. (Also, `d` is computed from the others, so only the leaves `a, b, c, f` should be nudged.)
+
 
 ## Check yourself
 
@@ -264,6 +351,22 @@ The included [`micrograd/value_graph.svg`](micrograd/value_graph.svg) is a rende
 7. For `a = (3, 4)` and `b = (4, 0)`, calculate their dot product and the scalar and vector projections of `a` onto `b`.
 8. Why does cosine similarity stay the same if a nonzero vector is multiplied by a positive scale, and when is cosine similarity undefined?
 9. For `x = (2, 3)`, `w = (0.5, 0.2)`, and `b = 1`, calculate the neuron's pre-activation `z`.
+
+<details>
+<summary><b>Short answers (open after you've tried)</b></summary>
+
+1. Holding `b` fixed, `a × b` is a straight line in `a` with slope `b`.
+2. Two contributions (one per input position), each `1 × 1`, so `x.grad = 2`.
+3. The operand `Value`s and the output `out` (for their `.data` and `.grad`), plus any constants such as the exponent in `__pow__`.
+4. A node may only pass gradient to its parents after it has received gradient from **every** node that uses it. Reverse topological order guarantees that.
+5. `visited` stops a shared node from being listed twice; `+=` makes sure every edge into it still adds its contribution.
+6. Each output stores a small object (the closure) that knows how to perform its own backward step later, just as a Command object wraps an action to `run()` later.
+7. `a · b = 12`; scalar projection `= 12 / 4 = 3`; vector projection `= (12 / 16)(4, 0) = (3, 0)`.
+8. Scaling a vector by `k > 0` scales both the dot product and the length by `k`, which cancels in the ratio. It's undefined when either vector is zero (division by a zero length).
+9. `z = 0.5·2 + 0.2·3 + 1 = 2.6`.
+
+</details>
+
 
 ## References
 

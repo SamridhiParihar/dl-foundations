@@ -9,6 +9,18 @@
 - We do leverage dynamic programming to avoid redundant calculations which makes it feasible.
 - All is based on partial derivative rule (chain rule).
 
+> **How these notes map to the code** (added for reference)
+>
+> | In these notes | In `backprop-by-hand.py` |
+> |---|---|
+> | $x_i$ (pre-activation of neuron $i$) | a column of `Z1` or `Z2` |
+> | $a_i = f(x_i)$ (activation) | a column of `A1` or `A2` |
+> | $\delta_i = \partial L / \partial x_i$ | a column of `dZ1` or `dZ2` |
+> | $\frac{1}{N}\sum_j \delta^j \cdot a^j$ | `A.T @ dZ` (the matrix product does the sum over examples) |
+>
+> These notes use the squared error $\sum (t-a)^2$ at the output. The code uses **sigmoid + BCE** instead, where the output delta simplifies to $p - y$ (see README §6). The hidden-layer rules below are the same for both.
+
+
 Technically:
 
 $$
@@ -80,6 +92,9 @@ flowchart LR
     SUM2 --> XN2["x_n"]
 ```
 
+![A hidden neuron's delta collects from every path](figures/hidden_delta_paths.svg)
+
+
 For the two paths shown:
 
 $$
@@ -130,6 +145,9 @@ $$
 $$
 
 Similar rules to all hidden neurons.
+
+> **Note on notation** (added for reference): in $f'(\cdot)$ the derivative of the activation is evaluated at the neuron's **pre-activation** $x$, so strictly $f'(x_g^j)$ rather than $f'(a_g^j)$, because $a = f(x)$. For some activations the derivative can be written using the output instead: sigmoid gives $f'(x) = a(1-a)$, tanh gives $f'(x) = 1 - a^2$, ReLU gives $1$ if $x > 0$ else $0$. That's why the code can use either the cached `Z1` (for the ReLU mask) or the cached `A2` (for sigmoid).
+
 
 $$
 \therefore\ \text{gradient descent }(\theta) = -\eta \nabla L
