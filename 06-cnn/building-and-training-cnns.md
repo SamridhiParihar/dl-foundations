@@ -929,3 +929,9 @@ x̂ ≈ [−1.342, −0.447, 0.447, 1.342]. Then y = 3x̂ − 1 ≈ [−5.025, �
 **End of Part 2: Building and Training CNNs**
 
 *Build it with care (normalize, regularize, initialize well). Train it with discipline (overfit a tiny sample, tune the learning rate first, read the curves).*
+
+---
+
+## Practice: learn it by doing
+
+➡️ **[Part 2 Practice](part2-practice.md)**: Phases 8–17, hands-on experiments for every topic above (overfit a tiny batch, learning-rate sweep, initialization, Batch Norm, dropout, augmentation, ResNet, transfer learning). You write the code; the guide tells you what to build, save and look for.

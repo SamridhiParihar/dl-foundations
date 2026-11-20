@@ -3,17 +3,14 @@
 Deep learning from first principles, in NumPy and PyTorch — part of my Year One plan (RRC, IIIT Hyderabad).
 Each chapter: concept → maths → small example → implementation → exercises → notes.
 
-| # | Chapter | Plan days |
-|---|---|---|
-| 01 | [NumPy and Tensors](01-numpy-and-tensors/) | Day 001 |
-| 02 | [Backpropagation by Hand](02-backprop-by-hand/) | Day 002 |
-| 03 | [micrograd — an Autograd Engine](03-micrograd/) | Days 003–004 |
-| 04 | [First PyTorch Training Pipeline](first_pytorch_training/) · [theory](first_pytorch_training/THEORY.md) | Day 005 |
-
-| 05 | [Matplotlib Essentials](05-matplotlib/) | — |
-| 06 | [Convolution to CNNs](06-cnn/) · [Part 2: Building and Training CNNs](06-cnn/building-and-training-cnns.md) · [filter visualization](06-cnn/figures/) | — |
-
-
+| # | Chapter | What you learn | Extra docs |
+|---|---|---|---|
+| 01 | [NumPy and Tensors](01-numpy-and-tensors/) | Shapes, indexing, broadcasting, `@`, views vs copies, PyTorch tensors | – |
+| 02 | [Backpropagation by Hand](02-backprop-by-hand/) | A 2-layer network in NumPy: forward pass, BCE, chain rule, gradient descent | [notes](02-backprop-by-hand/notes.md) |
+| 03 | [micrograd — an Autograd Engine](03-micrograd/) | Building automatic differentiation from scratch, up to a tiny MLP | – |
+| 04 | [First PyTorch Training Pipeline](first_pytorch_training/) | Dataset → DataLoader → model → train → evaluate → checkpoint, CPU vs MPS | [theory](first_pytorch_training/THEORY.md) |
+| 05 | [Matplotlib Essentials](05-matplotlib/) | Figures and Axes, training curves, spotting overfitting, saving plots | – |
+| 06 | [Convolution to CNNs](06-cnn/) | Convolution maths, FFT, CNN layers, receptive fields, pooling | [Part 2: Building and Training CNNs](06-cnn/building-and-training-cnns.md) · [filter visualization](06-cnn/figures/) |
 
 ## Learning path
 
